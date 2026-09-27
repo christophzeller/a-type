@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../world/enemies.hxx"
+
+#include "../world/player.hxx"
 #include "../world/world.hxx"
 
 #include <algorithm>
@@ -124,27 +127,55 @@ bool is_in_screenspace(coordinate c)
     return (c.x >= 0) && (c.y >= 0) && (c.x <= 79) && (c.y <= 23);
 }
 
+void render_object(terminal_screen::buffer& buf, i_drawable* object)
+{
+    render_info ri = object->get_render_info();
+    for (auto j = 0; j < ri.bb.dimensions.y; ++j)
+    {
+        for (auto i = 0; i < ri.bb.dimensions.x; ++i)
+        {
+            coordinate chunk = ri.bb.top_left;
+            chunk += {i, j};
+            if (is_in_screenspace(chunk))
+            {
+                auto symbol = ri.model[j * ri.bb.dimensions.x + i];
+                if (symbol != ri.transparency)
+                    buf[chunk.y][chunk.x] = symbol;
+            }
+        }
+    }
+}
+
 
 void render_autoscroll::draw_world(game_world& gw)
 {
     auto buf = get_renderbuffer();
 
-    //auto scr = dynamic_cast<i_autoscroller*>(&gw)
-
     std::lock_guard<std::mutex> world_guard(world_mutex);
+    torus* t;
+    
     for (auto* obj : gw.everything)
     {   
+        // skip for now, render last
+        if (obj == gw.the_player)
+            continue;
+
+        if (auto t_ = dynamic_cast<torus*>(obj))
+            t = t_;
         // drawable->where().y, x
         if (auto* drawable = dynamic_cast<i_drawable*>(obj))
         {
-            auto ss = obj->position_;
+            render_object(buf, drawable);
+            //auto ss = obj->position_;
             //ss += { -gw.progress, 0};
-            if (is_in_screenspace(ss))
-                buf[ss.y][ss.x] = drawable->get_representation();
+            //if (is_in_screenspace(ss))
+            //    buf[ss.y][ss.x] = drawable->get_representation();
         }
     }
 
-    buf[gw.the_player->position_.y][gw.the_player->position_.x] = gw.the_player->get_representation();
+    render_object(buf, dynamic_cast<i_drawable*>(t));
+
+    render_object(buf, dynamic_cast<i_drawable*>(gw.the_player));
     
     std::cout << "\033[H";
     for (const auto& line : buf)

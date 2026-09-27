@@ -1,6 +1,10 @@
 #pragma once
 
+#include <chrono>
 #include <functional>
+#include <vector>
+
+using namespace std::chrono;
 
 enum direction
 {
@@ -29,8 +33,8 @@ struct coordinate
 
 struct bounding_box
 {
-    coordinate xy {0, 0};
-    coordinate wh {1, 1};
+    coordinate top_left {0, 0};
+    coordinate dimensions {1, 1};
 };
 
 // min, max
@@ -54,7 +58,7 @@ struct world_object
     world_object& operator=(world_object& other) = default;
     world_object& operator=(world_object&& other) = default;
 
-    virtual void update() { logic_(); };
+    virtual void update(system_clock::duration delta_t) { logic_(); };
 
     char symbol_ { '?' };
     coordinate position_;
@@ -67,10 +71,27 @@ struct i_movable
     virtual direction get_move_intent(bool reset=false) = 0;
     virtual bool allow_autoscroll() = 0;
     virtual coordinate from() = 0;
+    virtual bool move() = 0;
+    virtual std::chrono::system_clock::duration get_speed() = 0;
+};
+
+
+struct render_info
+{
+    bounding_box bb;
+    std::vector<char> model; // copy
+    char transparency { '&' };
+    std::size_t z_order { 1 };
 };
 
 struct i_drawable
 {
     virtual char get_representation() = 0;
+    virtual render_info get_render_info() = 0;
     virtual coordinate where() = 0;
+};
+
+struct i_collider
+{
+    virtual bounding_box get_bounding_box() = 0;
 };

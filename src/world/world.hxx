@@ -2,6 +2,7 @@
 
 #include "../input/input.hxx"
 #include "objects.hxx"
+#include "player.hxx"
 #include "starfield.hxx"
 
 #include <algorithm>
@@ -23,52 +24,6 @@ using namespace std::literals::chrono_literals;
 
 std::mutex world_mutex;
 
-
-struct player : public world_object, i_movable, i_drawable
-{
-    player(coordinate position) : world_object('>', position, [](){}) {}
-    char get_representation() override 
-    {
-        return symbol_; 
-    }
-    coordinate where() override { return position_; }
-
-    void set_move_intent(direction dir) override 
-    {
-    	if (dir == move_intent)
-    		move_intent = STATIC;
-		else
-	    	move_intent = dir; 
-    }
-    
-    direction get_move_intent(bool reset = false) override 
-    { 
-        if (reset) 
-        { 
-            auto tmp = move_intent; 
-            move_intent = STATIC; 
-            return tmp;
-        } 
-    	else 
-        	return move_intent; 
-	}
-
-	bool allow_autoscroll() override { return false; }
-
-	coordinate from() override { return position_; }
-
-    direction move_intent { STATIC };
-
-    void on_capture()
-    {
-        score += 1;
-    }
-
-    //char animation[14] { '.', '.', 'o', 'o', '8', '8', 'O', 'O', '8', '8', 'o', 'o', '.', '.'};
-    int score = 0;
-};
-
-
 bool is_collision(const world_object& a, const world_object& b)
 {
     std::lock_guard<std::mutex> world_guard(world_mutex);
@@ -78,6 +33,7 @@ bool is_collision(const world_object& a, const world_object& b)
 void move_object(world_object& object, direction dir, bool allow_oob=false)
 {
     std::lock_guard<std::mutex> world_guard(world_mutex);
+
     switch(dir)
     {
     case NORTH:
@@ -102,7 +58,8 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
 
 void move_object(i_movable* movable, direction dir, bool allow_oob=false)
 {
-    move_object(*dynamic_cast<world_object*>(movable), dir);
+    if (movable->move())
+        move_object(*dynamic_cast<world_object*>(movable), dir);
 }
 
 struct game_world
@@ -151,6 +108,24 @@ struct game_world
 // game_state ?
 struct engine_state
 {
+	void tick()
+	{
+		++current_tick;
+		
+		last_tick = now;
+		now = system_clock::now();
+
+		delta_t = now - last_tick;
+//		std::cout << "                                                              dt: " << delta_t.count() << "\n";
+
+		on_tick(delta_t);
+		if (now >= next_tick)
+		{
+			next_tick = now + scroll_rate;
+			on_scroll(delta_t);
+		}
+	}
+
     engine_state(input_listener& input) : input_(input)
     {
         input_.add_callback('q', [this](){ is_paused = false; pause_cv.notify_all(); is_running = false; });
@@ -158,6 +133,10 @@ struct engine_state
     }
 
     input_listener& input_;
+
+    std::function<void(system_clock::duration)> on_tick;
+    std::function<void(system_clock::duration)> on_scroll;
+    system_clock::duration scroll_rate;
     
     time_point<system_clock> last_tick;
     time_point<system_clock> next_tick;
@@ -168,6 +147,9 @@ struct engine_state
 
     std::atomic<bool> is_running { true };
     std::atomic<bool> is_paused { false };
+
+    system_clock::duration delta_t;
+    std::size_t current_tick { 0 };
 };
 
 struct i_autoscroller

@@ -11,6 +11,8 @@ struct star : public world_object, i_drawable, i_movable
      : world_object(symbol, position, [](){})
      , throttle(scroll_throttle)
     {}
+
+    void update(std::chrono::system_clock::duration delta_t) override {}
      
     ~star() = default;    
     star(const star&) = default;
@@ -37,6 +39,15 @@ struct star : public world_object, i_drawable, i_movable
         return ' ';
         
     }
+
+    render_info get_render_info() override 
+    {
+        bounding_box bb;
+        bb.top_left = position_;
+        bb.dimensions = {1, 1};
+        model[0] = get_representation();
+        return render_info{ bb, model };
+    }
     
     coordinate where() override { return position_; }
 
@@ -52,6 +63,11 @@ struct star : public world_object, i_drawable, i_movable
     }
 
     coordinate from() override { return position_; }
+
+    std::vector<char> model { '*' };
+
+    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 0ms; } // todo:: throttle * scroll rate
+    bool move() override { return true; }
 
     std::size_t blink_frequency { 1013 };
     std::size_t draw_count { std::rand() % blink_frequency };

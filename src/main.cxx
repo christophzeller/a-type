@@ -2,6 +2,8 @@
 #include "input/input.hxx"
 #include "world/starfield.hxx"
 #include "terminal/terminal.hxx"
+#include "world/enemies.hxx"
+#include "world/player.hxx"
 #include "world/world.hxx"
 
 #include <algorithm>
@@ -35,7 +37,6 @@ void render_loop(terminal_screen& term, engine_state& es)
     while (es.is_running)
     {
         term.draw();
-        std::this_thread::sleep_for(50ms);
     }
 }
 
@@ -74,7 +75,7 @@ void spawn_stars(game_world& gw, std::vector<std::unique_ptr<star>>& stars, std:
 	            stars.push_back(
 	            	std::make_unique<star>(
 	            		coordinate(79, (layer % 2 == 0) ? 23 - sy : sy)
-	            		, (layer == 1) ? '*' : '.'
+	            		, (layer == 1) ? '.' : '.'
 	            		, layer));
 	            gw.add_object(stars.back().get());
 	    	}
@@ -99,6 +100,7 @@ void cleanup(game_world& gw, std::vector<world_object*>& kill_list, std::vector<
             }
         }
     }
+    kill_list.clear();
 }
 
 void logic_loop(game_world& gw, engine_state& es)
@@ -107,38 +109,22 @@ void logic_loop(game_world& gw, engine_state& es)
     auto next_autoscroll = system_clock::now() + 150ms;
 
     std::vector<std::unique_ptr<star>> stars;
+    std::vector<world_object*> kill_list;
+
+    es.scroll_rate = 150ms;
+
+    auto on_tick = [&gw](std::chrono::system_clock::duration delta_t){  for (auto* o : gw.everything) o->update(delta_t); for (auto* o : gw.movables) move_object(o, o->get_move_intent()); };
+    auto on_scroll = [&gw, &stars, &kill_list](std::chrono::system_clock::duration delta_t){ scroll(gw, kill_list); spawn_stars(gw, stars, 3); cleanup(gw, kill_list, stars); gw.progress += 1; };
+
+    es.on_tick = on_tick;
+    es.on_scroll = on_scroll;
 
     while (es.is_running)
     {
         std::unique_lock pause_lock(es.pause_mutex);
         es.pause_cv.wait(pause_lock, [&es](){ return !es.is_paused; });
 
-        auto now = system_clock::now();
-        std::vector<world_object*> kill_list;
-
-        for (auto* o : gw.movables)
-        {
-            move_object(o, o->get_move_intent());
-        }
-
-        for (auto* o : gw.everything)
-            o->update();
-
-        if (now > next_autoscroll)
-        {
-            next_autoscroll = now + 150ms;
-
-            scroll(gw, kill_list);
- 
-            // mutex
-            spawn_stars(gw, stars, 3);
-
-            cleanup(gw, kill_list, stars);
-
-            gw.progress += 1;
-        }
-
-        std::this_thread::sleep_for(50ms);
+        es.tick();
     }
 }
 
@@ -146,10 +132,12 @@ int main()
 {
     std::srand(std::time({}));
 
-    player p { {20, 12} };
+    player p { { 20, 12 } };
+    torus t { { 55, 6 } };
 
     game_world gw;
     gw.add_object(&p);
+    gw.add_object(&t);
 
     render_autoscroll renderer{};
     terminal_screen term(gw, renderer);
