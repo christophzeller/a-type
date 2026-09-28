@@ -43,6 +43,12 @@ struct render_autoscroll : public i_render_strategy
 struct terminal_screen 
 {
     using buffer = std::vector<std::string>;
+    using depth_info = std::vector<std::vector<std::size_t>>;
+    struct render_buffers
+    {
+        buffer surface;
+        depth_info depth;
+    };
 
     explicit terminal_screen(game_world& gw, i_render_strategy& renderer);
     virtual ~terminal_screen();
@@ -63,19 +69,6 @@ private:
     std::size_t height { 24 };
     
 };
-
-terminal_screen::buffer get_renderbuffer(std::size_t width = 80, std::size_t height = 24)
-{
-    terminal_screen::buffer tmp;
-
-    for (auto i = 0; i < height; ++i)
-    {
-        tmp.push_back(std::string(width, ' '));
-    }
-
-    return tmp;
-
-}
 
 terminal_screen::buffer terminal_screen::get_renderbuffer()
 {
@@ -122,12 +115,26 @@ terminal_screen::~terminal_screen()
     close(tty_fd);
 }
 
+terminal_screen::render_buffers get_renderbuffers(std::size_t width = 80, std::size_t height = 24)
+{
+    terminal_screen::render_buffers tmp;
+
+    for (auto i = 0; i < height; ++i)
+    {
+        tmp.surface.push_back(std::string(width, ' '));
+        tmp.depth.push_back( std::vector<std::size_t>(width, 0)  );
+    }
+
+    return tmp;
+}
+
+
 bool is_in_screenspace(coordinate c)
 {
     return (c.x >= 0) && (c.y >= 0) && (c.x <= 79) && (c.y <= 23);
 }
 
-void render_object(terminal_screen::buffer& buf, i_drawable* object)
+void render_object(terminal_screen::render_buffers& rb, i_drawable* object)
 {
     render_info ri = object->get_render_info();
     for (auto j = 0; j < ri.bb.dimensions.y; ++j)
@@ -139,8 +146,11 @@ void render_object(terminal_screen::buffer& buf, i_drawable* object)
             if (is_in_screenspace(chunk))
             {
                 auto symbol = ri.model[j * ri.bb.dimensions.x + i];
-                if (symbol != ri.transparency)
-                    buf[chunk.y][chunk.x] = symbol;
+                if (symbol != ri.transparency && rb.depth[chunk.y][chunk.x] < ri.z_order)
+                {
+                    rb.surface[chunk.y][chunk.x] = symbol;
+                    rb.depth[chunk.y][chunk.x] = ri.z_order;
+                }
             }
         }
     }
@@ -149,36 +159,20 @@ void render_object(terminal_screen::buffer& buf, i_drawable* object)
 
 void render_autoscroll::draw_world(game_world& gw)
 {
-    auto buf = get_renderbuffer();
+    auto buf = get_renderbuffers();
 
     std::lock_guard<std::mutex> world_guard(world_mutex);
-    torus* t;
     
     for (auto* obj : gw.everything)
     {   
-        // skip for now, render last
-        if (obj == gw.the_player)
-            continue;
-
-        if (auto t_ = dynamic_cast<torus*>(obj))
-            t = t_;
-        // drawable->where().y, x
         if (auto* drawable = dynamic_cast<i_drawable*>(obj))
         {
             render_object(buf, drawable);
-            //auto ss = obj->position_;
-            //ss += { -gw.progress, 0};
-            //if (is_in_screenspace(ss))
-            //    buf[ss.y][ss.x] = drawable->get_representation();
         }
     }
 
-    render_object(buf, dynamic_cast<i_drawable*>(t));
-
-    render_object(buf, dynamic_cast<i_drawable*>(gw.the_player));
-    
     std::cout << "\033[H";
-    for (const auto& line : buf)
+    for (const auto& line : buf.surface)
         std::cout << line << "\n";
 
 }
@@ -198,22 +192,3 @@ void render_autoscroll::draw_ui(game_world& gw)
 
     std::cout << (false ? paused : mt) << "\n" << instructions << "\n" << distance << "\n";
 }
-
-
-
-
-
-
-//struct render_scroller : public i_render_strategy
-// move render loop to strategy
-//
-    // read full level description from game_world
-    // get scrolling progression / offset
-    // get framebuffer
-    // read chunk: framebuffer dimensions @ world + offset
-    // store world, only replace new column/row?
-    // draw
-
-    // in logic thread: advance scrolling
-// starfield:
-// 

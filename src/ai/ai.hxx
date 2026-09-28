@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../world/world.hxx"
+#include "../world/objects.hxx"
 
 #include <cstdlib>
 #include <iostream>
@@ -85,67 +85,3 @@ void erratic(i_movable& obj, bool allow_x=true, bool allow_y=true)
     break;
     }
 }
-
-struct asteroid : public world_object, i_movable, i_drawable
-{
-    asteroid(coordinate position)
-    : world_object('O', position, []() {})
-    , animation_index(rand() % 12)
-    , next_move(std::chrono::system_clock::now()) 
-    {
-        /*auto x = rand() % 3;
-
-        switch (x)
-        {
-        case 0:
-            drift_dir = NORTH;
-        break;
-        case 1:
-            drift_dir = SOUTH;
-        break;
-        case 2:
-            drift_dir = STATIC;
-        break;
-        }*/
-    }
-
-    char get_representation() override 
-    {
-        return animation[animation_index++ % 8]; 
-    }
-    coordinate where() override { return position_; }
-    
-    void set_move_intent(direction dir) override { move_intent = dir; }
-
-    direction get_move_intent(bool reset = true) 
-    { 
-        using namespace std::literals::chrono_literals;
-        
-        if (std::chrono::system_clock::now() < next_move)
-            return STATIC;
-
-        next_move = std::chrono::system_clock::now() + milliseconds(move_interval);    
-        return drift_dir;
-        /*if (reset) 
-        {
-            auto tmp = move_intent; 
-            move_intent = STATIC; 
-            return tmp;
-        } 
-        else
-            return move_intent;
-        */
-    }
-
-    bool allow_autoscroll() override { return true; }
-
-    coordinate from() override { return position_; };
-
-    std::chrono::time_point<std::chrono::system_clock> next_move;
-    int move_interval { 1000 };
-    char animation[12] { 'o', 'o', 'o', 'o', 'o', 'o', 'O', 'O', 'O', 'O', 'O', 'O'};
-    std::size_t animation_index { 0 };
-    direction move_intent { STATIC };
-
-    direction drift_dir { STATIC };
-};

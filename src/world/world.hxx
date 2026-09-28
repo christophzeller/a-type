@@ -2,6 +2,7 @@
 
 #include "../input/input.hxx"
 #include "objects.hxx"
+#include "enemies.hxx"
 #include "player.hxx"
 #include "starfield.hxx"
 
@@ -23,12 +24,6 @@ using namespace std::chrono;
 using namespace std::literals::chrono_literals;
 
 std::mutex world_mutex;
-
-bool is_collision(const world_object& a, const world_object& b)
-{
-    std::lock_guard<std::mutex> world_guard(world_mutex);
-    return a.position_.x == b.position_.x && a.position_.y == b.position_.y;
-}
 
 void move_object(world_object& object, direction dir, bool allow_oob=false)
 {
@@ -77,6 +72,12 @@ struct game_world
 
         if (auto* mv = dynamic_cast<i_movable*>(wo))
             movables.push_back(mv);
+
+        if (auto* nm = dynamic_cast<enemy*>(wo))
+            enemies.push_back(nm);
+
+        if (auto* coll = dynamic_cast<i_collider*>(wo))
+            colliders.push_back(coll);
     }
 
     void remove_object(world_object* wo)
@@ -95,11 +96,32 @@ struct game_world
         {
             movables.erase(std::find(movables.begin(), movables.end(), mv));
         }
+
+        if (auto* nm = dynamic_cast<enemy*>(wo))
+        {
+            enemies.erase(std::find(enemies.begin(), enemies.end(), nm));
+        }
+
+        if (auto* coll = dynamic_cast<i_collider*>(wo))
+        {
+            colliders.erase(std::find(colliders.begin(), colliders.end(), coll));
+        }
+    }
+
+    void process_collisions()
+    {
+        for (auto* coll : colliders)
+        {
+            if (is_collision(*the_player, *coll))
+                the_player->on_collision(coll);
+        }
     }
 
     std::vector<world_object*> everything;
     std::vector<i_drawable*> drawables;
     std::vector<i_movable*> movables;
+    std::vector<i_collider*> colliders;
+    std::vector<enemy*> enemies;
     player* the_player;
 
     std::size_t progress { 0 };

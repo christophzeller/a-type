@@ -47,7 +47,7 @@ void scroll(game_world& gw, std::vector<world_object*>& kill_list)
         if (o->allow_autoscroll())
         {
             move_object(o, WEST, true);
-            if (o->from().x == 0)
+            if (o->get_position().x == 0)
             {
                 kill_list.push_back(dynamic_cast<world_object*>(o));
             }
@@ -55,14 +55,8 @@ void scroll(game_world& gw, std::vector<world_object*>& kill_list)
     }
 }
 
-std::size_t get_layer_offset(std::size_t layer, std::size_t step)
-{
-	return 42;
-}
-
 void spawn_stars(game_world& gw, std::vector<std::unique_ptr<star>>& stars, std::size_t layers=1)
 {
-	int layer_offsets[5] { 0, 3, 7, 11, 13};
     for (auto layer = 1; layer <= layers; ++layer)
     {
     	auto step = (layer - 1) ? layer * 4 : 1;
@@ -108,12 +102,14 @@ void logic_loop(game_world& gw, engine_state& es)
     using namespace std::literals::chrono_literals;
     auto next_autoscroll = system_clock::now() + 150ms;
 
+    // TODO: todo: game world / engine state
     std::vector<std::unique_ptr<star>> stars;
+    std::vector<std::unique_ptr<enemy>> enemies;
     std::vector<world_object*> kill_list;
 
     es.scroll_rate = 150ms;
 
-    auto on_tick = [&gw](std::chrono::system_clock::duration delta_t){  for (auto* o : gw.everything) o->update(delta_t); for (auto* o : gw.movables) move_object(o, o->get_move_intent()); };
+    auto on_tick = [&gw](std::chrono::system_clock::duration delta_t){  for (auto* o : gw.everything) o->update(delta_t); for (auto* o : gw.movables) move_object(o, o->get_move_intent()); gw.process_collisions(); };
     auto on_scroll = [&gw, &stars, &kill_list](std::chrono::system_clock::duration delta_t){ scroll(gw, kill_list); spawn_stars(gw, stars, 3); cleanup(gw, kill_list, stars); gw.progress += 1; };
 
     es.on_tick = on_tick;
@@ -124,6 +120,52 @@ void logic_loop(game_world& gw, engine_state& es)
         std::unique_lock pause_lock(es.pause_mutex);
         es.pause_cv.wait(pause_lock, [&es](){ return !es.is_paused; });
 
+        if (gw.progress == 40)
+        {
+            static bool spawn1 {true};
+
+            if (spawn1)
+            {
+                enemies.push_back(
+                    std::make_unique<torus>(
+                        coordinate { 40, 20}
+                    )
+                );
+                gw.add_object(enemies.back().get());
+                spawn1 = false;
+            }
+        }
+        if (gw.progress == 80)
+        {
+            static bool spawn2 {true};
+
+            if (spawn2)
+            {
+                enemies.push_back(
+                std::make_unique<rhombus>(
+                    coordinate { 50, 5}
+                    )
+                );
+                gw.add_object(enemies.back().get());
+                spawn2 = false;
+            }
+        }
+        if (gw.progress == 120)
+        {
+            static bool spawn3 {true};
+
+            if (spawn3)
+            {
+                enemies.push_back(
+                std::make_unique<diamond>(
+                    coordinate { 60, 12}
+                    )
+                );
+                gw.add_object(enemies.back().get());
+                spawn3 = false;
+            }
+        }
+
         es.tick();
     }
 }
@@ -132,12 +174,10 @@ int main()
 {
     std::srand(std::time({}));
 
-    player p { { 20, 12 } };
-    torus t { { 55, 6 } };
+    player p { { 20, 10 } };
 
     game_world gw;
     gw.add_object(&p);
-    gw.add_object(&t);
 
     render_autoscroll renderer{};
     terminal_screen term(gw, renderer);

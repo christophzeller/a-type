@@ -37,8 +37,6 @@ struct bounding_box
     coordinate dimensions {1, 1};
 };
 
-// min, max
-// "screenspace"
 coordinate get_random_coord()
 {
     auto x = rand() % 79;
@@ -51,7 +49,7 @@ struct world_object
 {
     world_object() = delete;
     world_object(coordinate position, std::function<void(void)> logic) : position_(position), logic_(logic) {}
-    world_object(char symbol, coordinate position, std::function<void(void)> logic) : symbol_(symbol), position_(position), logic_(logic) {}
+    world_object(char symbol, coordinate position, std::function<void(void)> logic) : symbol_(symbol), position_(position), logic_(logic) {} // TODO: deprecate
     virtual ~world_object() = default;
     world_object(const world_object&) = default;
     world_object(world_object&&) = default;
@@ -60,21 +58,20 @@ struct world_object
 
     virtual void update(system_clock::duration delta_t) { logic_(); };
 
-    char symbol_ { '?' };
+    char symbol_ { '?' }; // TODO: deprecate
     coordinate position_;
-    std::function<void(void)> logic_;
+    std::function<void(void)> logic_; // TODO: void(duration) ? 
 };
 
 struct i_movable
 {
     virtual void set_move_intent(direction dir) = 0;
-    virtual direction get_move_intent(bool reset=false) = 0;
-    virtual bool allow_autoscroll() = 0;
-    virtual coordinate from() = 0;
+    virtual direction get_move_intent(bool reset=false) = 0; // const?
     virtual bool move() = 0;
-    virtual std::chrono::system_clock::duration get_speed() = 0;
+    virtual bool allow_autoscroll() = 0; // const
+    virtual coordinate get_position() = 0; 
+    virtual std::chrono::system_clock::duration get_speed() = 0; // const
 };
-
 
 struct render_info
 {
@@ -86,12 +83,36 @@ struct render_info
 
 struct i_drawable
 {
-    virtual char get_representation() = 0;
-    virtual render_info get_render_info() = 0;
-    virtual coordinate where() = 0;
+    virtual char get_representation() = 0; // TODO: deprecate
+    virtual render_info get_render_info()= 0; // const
 };
 
 struct i_collider
 {
-    virtual bounding_box get_bounding_box() = 0;
+    virtual bounding_box get_bounding_box() const = 0;
+    virtual void on_collision(i_collider* other) = 0;
 };
+
+bool is_collision(const i_collider& a, const i_collider& b)
+{
+    return false;
+    
+    if (&a == &b)
+        return false;
+        
+    const auto& bb_a = a.get_bounding_box();
+    const auto& bb_b = b.get_bounding_box();
+
+    auto a_bottom_right = bb_a.top_left;
+    a_bottom_right += bb_a.dimensions;
+
+    auto b_bottom_right = bb_b.top_left;
+    b_bottom_right += bb_b.dimensions;
+
+    return 
+        (! // both NOT cleared -> collision
+        ((bb_a.top_left.x > b_bottom_right.x) || (a_bottom_right.x < bb_b.top_left.x))  // x-axis cleared
+        && 
+        ((bb_a.top_left.y > b_bottom_right.y) || (a_bottom_right.y < bb_b.top_left.y)) // y-axis cleared
+        );
+}
