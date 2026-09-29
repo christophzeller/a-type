@@ -63,6 +63,8 @@ struct star : public world_object, i_drawable, i_movable
     coordinate get_position() override { return position_; }
     std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 0ms; } // todo:: throttle * scroll rate
 
+    bool allow_oob() override { return false; }
+
     std::vector<char> model { '*' };
 
     std::size_t blink_frequency { 1013 };
@@ -166,6 +168,8 @@ struct asteroid : public world_object, i_movable, i_drawable
 
     bool move() override { return true; }
     std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 0ms; } // todo:: throttle * scroll rate
+
+    bool allow_oob() override { return false; }
 
     // i_drawable
     char get_representation() override 

@@ -1,7 +1,9 @@
 #include "ai/ai.hxx"
 #include "input/input.hxx"
-#include "world/starfield.hxx"
 #include "terminal/terminal.hxx"
+#include "world/gameworld.hxx"
+#include "world/projectile.hxx"
+#include "world/starfield.hxx"
 #include "world/enemies.hxx"
 #include "world/player.hxx"
 #include "world/world.hxx"
@@ -100,27 +102,37 @@ void cleanup(game_world& gw, std::vector<world_object*>& kill_list, std::vector<
 void logic_loop(game_world& gw, engine_state& es)
 {
     using namespace std::literals::chrono_literals;
+    using namespace std::placeholders;
     auto next_autoscroll = system_clock::now() + 150ms;
 
-    // TODO: todo: game world / engine state
-    std::vector<std::unique_ptr<star>> stars;
-    std::vector<std::unique_ptr<enemy>> enemies;
-    std::vector<world_object*> kill_list;
+    std::vector<std::unique_ptr<world_object>> dynamic_spawns;
 
     es.scroll_rate = 150ms;
 
-    auto on_tick = [&gw](std::chrono::system_clock::duration delta_t){  for (auto* o : gw.everything) o->update(delta_t); for (auto* o : gw.movables) move_object(o, o->get_move_intent()); gw.process_collisions(); };
-    auto on_scroll = [&gw, &stars, &kill_list](std::chrono::system_clock::duration delta_t){ scroll(gw, kill_list); spawn_stars(gw, stars, 3); cleanup(gw, kill_list, stars); gw.progress += 1; };
-
-    es.on_tick = on_tick;
-    es.on_scroll = on_scroll;
+    es.on_tick = std::bind(&game_world::on_tick, &gw, _1);
+    es.on_scroll = std::bind(&game_world::on_scroll, &gw, _1);
 
     while (es.is_running)
     {
         std::unique_lock pause_lock(es.pause_mutex);
         es.pause_cv.wait(pause_lock, [&es](){ return !es.is_paused; });
 
-        if (gw.progress == 40)
+        if (gw.progress == 20)
+        {
+            static bool spawn0 {true};
+
+            if (spawn0)
+            {
+                dynamic_spawns.push_back(
+                    std::make_unique<rhombus>(
+                        coordinate { 40, 11}
+                    )
+                );
+                gw.add_object(dynamic_spawns.back().get());
+                spawn0 = false;
+            }
+        }
+  /*      if (gw.progress == 40)
         {
             static bool spawn1 {true};
 
@@ -164,7 +176,7 @@ void logic_loop(game_world& gw, engine_state& es)
                 gw.add_object(enemies.back().get());
                 spawn3 = false;
             }
-        }
+        }*/
 
         es.tick();
     }
@@ -198,6 +210,11 @@ int main()
     input.add_callback(' ', [&p](){ 
         p.set_move_intent(STATIC); 
     });
+    input.add_callback('f', [&gw](){         
+        gw.process_attacks(); 
+    });
+    
+    
     engine_state es { input };
 
     std::thread render_thread { render_loop, std::ref(term), std::ref(es) };

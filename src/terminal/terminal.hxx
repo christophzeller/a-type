@@ -1,9 +1,10 @@
 #pragma once
 
+#include "../world/objects.hxx"
 #include "../world/enemies.hxx"
 
 #include "../world/player.hxx"
-#include "../world/world.hxx"
+#include "../world/gameworld.hxx"
 
 #include <algorithm>
 #include <cstddef>

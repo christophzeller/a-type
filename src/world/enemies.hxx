@@ -22,7 +22,7 @@ using namespace std::literals::chrono_literals;
 // hold position relative to two objects (block)
 // 
 
-struct enemy : public world_object, i_movable, i_drawable
+struct enemy : public world_object, i_movable, i_drawable, i_collider
 {
     enemy(coordinate position) : world_object('?', position, [](){} ) {}
     void update(system_clock::duration delta_t) override { logic_(); }
@@ -36,9 +36,19 @@ struct enemy : public world_object, i_movable, i_drawable
     coordinate get_position() override { return coordinate(); }
     bool move() override { return false; }
     std::chrono::system_clock::duration get_speed() override { return 0ms; }
+    bool allow_oob() override { return false; }
+
+    bounding_box get_bounding_box() const override
+    {
+        return {};  // TODO: member & update on move?
+    }
+    
+    void on_collision(i_collider* other) override 
+    {
+    }
 };
 
-struct torus : public enemy, i_collider //, world_object, i_movable, i_drawable
+struct torus : public enemy // world_object, i_movable, i_drawable
 {
     torus(coordinate position) : enemy(position) {} //world_object('#', position, [](){}) {}
     char get_representation() override 
@@ -103,8 +113,10 @@ struct torus : public enemy, i_collider //, world_object, i_movable, i_drawable
         return false;
     }
 
+    bool allow_oob() override { return false; }
+
     // i_collider
-    bounding_box get_bounding_box() const 
+    bounding_box get_bounding_box() const override
     {
         bounding_box bb;
         bb.top_left = coordinate{position_};
@@ -115,7 +127,6 @@ struct torus : public enemy, i_collider //, world_object, i_movable, i_drawable
     
     void on_collision(i_collider* other) override 
     {
-        std::cout << "                                                                  COLLIE\n";
     }
 
     std::vector<char> model_chars { 
@@ -194,6 +205,22 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
         return false;
     }
 
+    bool allow_oob() override { return false; }
+
+    // i_collider
+    bounding_box get_bounding_box() const override
+    {
+        bounding_box bb;
+        bb.top_left = coordinate{position_};
+        bb.dimensions = coordinate{model_dimensions};
+
+        return bb;  // TODO: member & update on move?
+    }
+    
+    void on_collision(i_collider* other) override 
+    {
+    }
+
     std::vector<char> model_chars { 
         '/', '=', '\\',
         '\\', '=', '/'
@@ -267,6 +294,22 @@ struct diamond : public enemy//, world_object, i_movable, i_drawable
             return true;
         }
         return false;
+    }
+
+    bool allow_oob() override { return false; }
+
+    // i_collider
+    bounding_box get_bounding_box() const override
+    {
+        bounding_box bb;
+        bb.top_left = coordinate{position_};
+        bb.dimensions = coordinate{model_dimensions};
+
+        return bb;  // TODO: member & update on move?
+    }
+    
+    void on_collision(i_collider* other) override 
+    {
     }
 
     std::vector<char> model_chars { 

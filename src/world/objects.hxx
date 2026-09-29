@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <functional>
+#include <iostream>
 #include <vector>
 
 using namespace std::chrono;
@@ -61,6 +62,8 @@ struct world_object
     char symbol_ { '?' }; // TODO: deprecate
     coordinate position_;
     std::function<void(void)> logic_; // TODO: void(duration) ? 
+    std::function<void(void)> self_destruct;
+    // TODO: callbacks?
 };
 
 struct i_movable
@@ -71,6 +74,7 @@ struct i_movable
     virtual bool allow_autoscroll() = 0; // const
     virtual coordinate get_position() = 0; 
     virtual std::chrono::system_clock::duration get_speed() = 0; // const
+    virtual bool allow_oob() = 0;
 };
 
 struct render_info
@@ -95,24 +99,22 @@ struct i_collider
 
 bool is_collision(const i_collider& a, const i_collider& b)
 {
-    return false;
-    
     if (&a == &b)
         return false;
-        
+
     const auto& bb_a = a.get_bounding_box();
     const auto& bb_b = b.get_bounding_box();
 
-    auto a_bottom_right = bb_a.top_left;
-    a_bottom_right += bb_a.dimensions;
+    coordinate tmp_a = bb_a.top_left;
+    tmp_a += bb_a.dimensions;
 
-    auto b_bottom_right = bb_b.top_left;
-    b_bottom_right += bb_b.dimensions;
-
+    coordinate tmp_b = bb_b.top_left;
+    tmp_b += bb_b.dimensions;
+    
     return 
-        (! // both NOT cleared -> collision
-        ((bb_a.top_left.x > b_bottom_right.x) || (a_bottom_right.x < bb_b.top_left.x))  // x-axis cleared
-        && 
-        ((bb_a.top_left.y > b_bottom_right.y) || (a_bottom_right.y < bb_b.top_left.y)) // y-axis cleared
-        );
+    !(
+        ((bb_a.top_left.x > tmp_b.x) || (tmp_a.x < bb_b.top_left.x)) 
+    || 
+        ((bb_a.top_left.y > tmp_b.y) || (tmp_a.y < bb_b.top_left.y))
+    );
 }

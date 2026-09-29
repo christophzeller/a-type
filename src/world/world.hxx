@@ -32,7 +32,12 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
     switch(dir)
     {
     case NORTH:
-        object.position_.y = std::clamp( object.position_.y -= 1, 0, 23); //w N
+        if (!allow_oob)
+            object.position_.y = std::clamp( object.position_.y -= 1, 0, 23); //w N
+        else
+        {
+            object.position_.y -= 1;
+        }
         break;
     case WEST:
         if (!allow_oob)
@@ -43,10 +48,20 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         }
         break;
     case SOUTH:
-        object.position_.y = std::clamp( object.position_.y += 1, 0, 23); //s S
+        if (!allow_oob)
+            object.position_.y = std::clamp( object.position_.y += 1, 0, 23); //s S
+        else
+        {
+            object.position_.y += 1;
+        }
         break;
     case EAST:
-        object.position_.x = std::clamp( object.position_.x += 1, 0, 79); //d E
+        if (!allow_oob)
+            object.position_.x = std::clamp( object.position_.x += 1, 0, 79); //d E
+        else
+        {
+            object.position_.x += 1;
+        }
         break;
     }
 }
@@ -54,9 +69,10 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
 void move_object(i_movable* movable, direction dir, bool allow_oob=false)
 {
     if (movable->move())
-        move_object(*dynamic_cast<world_object*>(movable), dir);
+        move_object(*dynamic_cast<world_object*>(movable), dir, allow_oob);
 }
 
+#if 0
 struct game_world
 {
     void add_object(world_object* wo)
@@ -77,7 +93,10 @@ struct game_world
             enemies.push_back(nm);
 
         if (auto* coll = dynamic_cast<i_collider*>(wo))
-            colliders.push_back(coll);
+            colliders.push_back(coll);        
+
+        if (auto* pro = dynamic_cast<projectile*>(wo))
+            projectiles.push_back(pro);
     }
 
     void remove_object(world_object* wo)
@@ -106,6 +125,11 @@ struct game_world
         {
             colliders.erase(std::find(colliders.begin(), colliders.end(), coll));
         }
+
+        if (auto* pro = dynamic_cast<projectile*>(wo))
+        {
+            projectiles.erase(std::find(projectiles.begin(), projectiles.end(), pro));
+        }
     }
 
     void process_collisions()
@@ -113,19 +137,45 @@ struct game_world
         for (auto* coll : colliders)
         {
             if (is_collision(*the_player, *coll))
+            {
                 the_player->on_collision(coll);
+                remove_object(dynamic_cast<world_object*>(coll));
+            }
+
+            for (auto* pro : projectiles)
+            {
+                if (is_collision(*pro, *coll))
+                {
+                    remove_object(dynamic_cast<world_object*>(coll));
+                }
+            }
         }
     }
+
+    void process_attacks()
+    {
+        dynamic_spawns.push_back(
+            std::make_unique<projectile>(
+                coordinate {0, 20}
+            )
+        );
+        add_object(dynamic_spawns.back().get());
+    }
+
+    std::vector<std::unique_ptr<world_object>> dynamic_spawns;
 
     std::vector<world_object*> everything;
     std::vector<i_drawable*> drawables;
     std::vector<i_movable*> movables;
     std::vector<i_collider*> colliders;
     std::vector<enemy*> enemies;
+    std::vector<projectile*> projectiles;
     player* the_player;
 
     std::size_t progress { 0 };
 };
+
+#endif
 
 // game_state ?
 struct engine_state
