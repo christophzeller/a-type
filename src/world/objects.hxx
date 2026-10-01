@@ -3,6 +3,7 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <set>
 #include <vector>
 
 using namespace std::chrono;
@@ -21,6 +22,14 @@ struct coordinate
     coordinate(coordinate&&) = default;
     coordinate& operator=(coordinate&) = default;
     coordinate& operator=(coordinate&&) = default;
+
+    bool operator==(const coordinate& other)
+    {
+        if (other.x == x && other.y == y)
+            return true;
+    
+        return false;
+    }
 
     int x { 0 }; 
     int y { 0 };
@@ -46,6 +55,14 @@ coordinate get_random_coord()
     return {x, y};
 }
 
+bool is_oob(coordinate c)
+{
+    if (c.x < 0 || c.x > 79 || c.y < 0 || c.y > 23)
+        return true;
+
+    return false;
+}
+
 struct world_object
 {
     world_object() = delete;
@@ -54,7 +71,7 @@ struct world_object
     virtual ~world_object() = default;
     world_object(const world_object&) = default;
     world_object(world_object&&) = default;
-    world_object& operator=(world_object& other) = default;
+    world_object& operator=(const world_object& other) = default;
     world_object& operator=(world_object&& other) = default;
 
     virtual void update(system_clock::duration delta_t) { logic_(); };
@@ -64,7 +81,12 @@ struct world_object
     std::function<void(void)> logic_; // TODO: void(duration) ? 
     std::function<void(void)> self_destruct;
     // TODO: callbacks?
+
+    static std::size_t instance_counter;
+    //std::size_t instance_id { instance_counter++ };
 };
+
+std::size_t world_object::instance_counter = 0;
 
 struct i_movable
 {
@@ -106,10 +128,12 @@ bool is_collision(const i_collider& a, const i_collider& b)
     const auto& bb_b = b.get_bounding_box();
 
     coordinate tmp_a = bb_a.top_left;
-    tmp_a += bb_a.dimensions;
+    tmp_a.x += bb_a.dimensions.x - 1;
+    tmp_a.y += bb_a.dimensions.y - 1;
 
     coordinate tmp_b = bb_b.top_left;
-    tmp_b += bb_b.dimensions;
+    tmp_b.x += bb_b.dimensions.x - 1;
+    tmp_b.y += bb_b.dimensions.y - 1;
     
     return 
     !(
@@ -117,4 +141,50 @@ bool is_collision(const i_collider& a, const i_collider& b)
     || 
         ((bb_a.top_left.y > tmp_b.y) || (tmp_a.y < bb_b.top_left.y))
     );
+}
+
+bool is_collision(world_object* a, world_object* b)
+{
+    if (auto colla = dynamic_cast<i_collider*>(a))
+        if (auto collb = dynamic_cast<i_collider*>(b))
+            return is_collision(*colla, *collb);
+    return false;
+}
+
+using collision = std::set<world_object*>;
+using collision_list = std::set<collision>;
+
+collision_list get_collisions(const std::vector<world_object*> objects) 
+{
+    collision_list collisions {};
+
+    for (auto* lhs : objects)
+    {
+        if (!dynamic_cast<i_collider*>(lhs))
+            continue;
+            
+        for (auto* rhs : objects)
+        {
+            if (lhs == rhs)
+                continue;
+
+            if (!dynamic_cast<i_collider*>(rhs))
+                continue;
+
+            if (is_oob(rhs->position_))
+                continue;
+
+            if (is_collision(lhs, rhs))
+            {
+                collision c;
+                c.insert(lhs);
+                c.insert(rhs);
+
+                if (collisions.count(c) == 0)
+                    collisions.insert(c);
+            }
+        }
+    }
+
+    return collisions;
 }

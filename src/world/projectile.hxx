@@ -10,7 +10,8 @@ using namespace std::literals::chrono_literals;
 
 struct projectile : public world_object, i_movable, i_drawable, i_collider
 {
-    projectile(coordinate position) : world_object('~', position, [](){}) {}
+    projectile(coordinate position, direction dir=EAST) : world_object('~', position, [](){}), move_intent(dir) {}
+    ~projectile() = default;
 
     // i_drawable
     char get_representation() override 

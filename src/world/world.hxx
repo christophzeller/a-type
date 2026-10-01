@@ -72,111 +72,6 @@ void move_object(i_movable* movable, direction dir, bool allow_oob=false)
         move_object(*dynamic_cast<world_object*>(movable), dir, allow_oob);
 }
 
-#if 0
-struct game_world
-{
-    void add_object(world_object* wo)
-    {
-        std::lock_guard<std::mutex> world_guard(world_mutex);
-        everything.push_back(wo);
-    
-        if (auto* drw = dynamic_cast<i_drawable*>(wo))
-            drawables.push_back(drw);
-
-        if (auto* plyr = dynamic_cast<player*>(wo))
-            the_player = plyr;
-
-        if (auto* mv = dynamic_cast<i_movable*>(wo))
-            movables.push_back(mv);
-
-        if (auto* nm = dynamic_cast<enemy*>(wo))
-            enemies.push_back(nm);
-
-        if (auto* coll = dynamic_cast<i_collider*>(wo))
-            colliders.push_back(coll);        
-
-        if (auto* pro = dynamic_cast<projectile*>(wo))
-            projectiles.push_back(pro);
-    }
-
-    void remove_object(world_object* wo)
-    {
-        std::lock_guard<std::mutex> world_guard(world_mutex);
-        everything.erase(std::find(everything.begin(), everything.end(), wo));
-        
-        std::remove(everything.begin(), everything.end(), wo);
-
-        if (auto* drw = dynamic_cast<i_drawable*>(wo))
-        {
-            drawables.erase(std::find(drawables.begin(), drawables.end(), drw));
-        }
-
-        if (auto* mv = dynamic_cast<i_movable*>(wo))
-        {
-            movables.erase(std::find(movables.begin(), movables.end(), mv));
-        }
-
-        if (auto* nm = dynamic_cast<enemy*>(wo))
-        {
-            enemies.erase(std::find(enemies.begin(), enemies.end(), nm));
-        }
-
-        if (auto* coll = dynamic_cast<i_collider*>(wo))
-        {
-            colliders.erase(std::find(colliders.begin(), colliders.end(), coll));
-        }
-
-        if (auto* pro = dynamic_cast<projectile*>(wo))
-        {
-            projectiles.erase(std::find(projectiles.begin(), projectiles.end(), pro));
-        }
-    }
-
-    void process_collisions()
-    {
-        for (auto* coll : colliders)
-        {
-            if (is_collision(*the_player, *coll))
-            {
-                the_player->on_collision(coll);
-                remove_object(dynamic_cast<world_object*>(coll));
-            }
-
-            for (auto* pro : projectiles)
-            {
-                if (is_collision(*pro, *coll))
-                {
-                    remove_object(dynamic_cast<world_object*>(coll));
-                }
-            }
-        }
-    }
-
-    void process_attacks()
-    {
-        dynamic_spawns.push_back(
-            std::make_unique<projectile>(
-                coordinate {0, 20}
-            )
-        );
-        add_object(dynamic_spawns.back().get());
-    }
-
-    std::vector<std::unique_ptr<world_object>> dynamic_spawns;
-
-    std::vector<world_object*> everything;
-    std::vector<i_drawable*> drawables;
-    std::vector<i_movable*> movables;
-    std::vector<i_collider*> colliders;
-    std::vector<enemy*> enemies;
-    std::vector<projectile*> projectiles;
-    player* the_player;
-
-    std::size_t progress { 0 };
-};
-
-#endif
-
 // game_state ?
 struct engine_state
 {
@@ -219,6 +114,8 @@ struct engine_state
 
     std::atomic<bool> is_running { true };
     std::atomic<bool> is_paused { false };
+
+    system_clock::duration render_t;
 
     system_clock::duration delta_t;
     std::size_t current_tick { 0 };

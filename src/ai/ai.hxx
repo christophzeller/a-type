@@ -15,32 +15,42 @@ direction get_direct_path(const coordinate& from, const coordinate& to)
 
     if ((delta_x == 0) && (delta_y == 0))
         return STATIC;
-    
-    if (std::abs(delta_x) > std::abs(delta_y))
-    {
+
+	if (delta_y == 0)
+	{
         if (delta_x > 0)
             return WEST;
         else
             return EAST;
-    }
-    else
-    {
+	}
+
+	if ((delta_x % delta_y) == 0)
+	{
         if (delta_y > 0)
             return NORTH;
         else
             return SOUTH;
-    }
+	}
+
+    if (delta_x > 0)
+        return WEST;
+    else
+        return EAST;
 }
 
-void hunt(world_object& hunter, const world_object& target)
+void navigate(world_object& mover, const coordinate& destination)
 {
-    auto* movable = dynamic_cast<i_movable*>(&hunter);
+    auto* movable = dynamic_cast<i_movable*>(&mover);
+    if (!movable) 
+        return;
 
-    if (!movable) return;
-
-    movable->set_move_intent(get_direct_path(hunter.position_, target.position_));
+    movable->set_move_intent(get_direct_path(mover.position_, destination));
 }
 
+void navigate(world_object& mover, const world_object& target)
+{
+	navigate(mover, target.position_);
+}
 
 void block(world_object& protector, const world_object& aggressor, const world_object& target)
 {

@@ -24,33 +24,120 @@ using namespace std::literals::chrono_literals;
 
 struct enemy : public world_object, i_movable, i_drawable, i_collider
 {
-    enemy(coordinate position) : world_object('?', position, [](){} ) {}
-    void update(system_clock::duration delta_t) override { logic_(); }
+    enemy(coordinate position) : world_object('?', position, [](){} ) 
+    {
+    }
+
+    // TODO: enemy(coordinate position, move timer, move speed, attack timer, attack speed, model_chars, model_dimensions
+    
+    void update(system_clock::duration delta_t) override 
+    {
+        logic_();
+        if (move_intent != STATIC)
+        {
+            move_timer -= delta_t;
+        }
+ 
+        attack_timer -= delta_t;
+        if (attack_timer < 0ms)
+        {
+            attack_intent = true;
+            attack_timer = attack_frequency;
+        }
+    }
 
     char get_representation() override { return '?'; }
     render_info get_render_info() override { return render_info(); }
 
-    void set_move_intent(direction dir) override {}
-    direction get_move_intent(bool reset=false) override { return STATIC; }
+    void set_move_intent(direction dir) override 
+    {
+    	move_intent = dir; 
+	    // todo: sync time
+    }
+    
+    direction get_move_intent(bool reset = true) override 
+    { 
+        if (reset) 
+        { 
+            auto tmp = move_intent; 
+            move_intent = STATIC; 
+            return tmp;
+        } 
+    	else 
+        	return move_intent; 
+	}
+
     bool allow_autoscroll() override { return false; }
-    coordinate get_position() override { return coordinate(); }
-    bool move() override { return false; }
-    std::chrono::system_clock::duration get_speed() override { return 0ms; }
+    coordinate get_position() override { return position_; }
+
+    bool move() override
+    {
+        if (move_timer < 0ms)
+        {	
+            move_timer = move_speed;
+            return true;
+        }
+        return false;
+    }
+
+    std::chrono::system_clock::duration get_speed() override { return move_speed; }
     bool allow_oob() override { return false; }
 
     bounding_box get_bounding_box() const override
     {
-        return {};  // TODO: member & update on move?
+        bounding_box bb;
+        bb.top_left = coordinate{position_};
+        bb.dimensions = coordinate{model_dimensions};
+
+        return bb;  // TODO: member & update on move?
     }
     
     void on_collision(i_collider* other) override 
     {
     }
+
+    virtual bool attack()
+    {
+        if (attack_intent)
+        {
+            attack_intent = false;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    system_clock::duration attack_timer { 1s };
+    system_clock::duration attack_frequency { 3s };
+
+    system_clock::duration move_timer { 100ms };
+    system_clock::duration move_speed { 100ms };
+    direction move_intent { STATIC };
+
+    bool attack_intent { false };
+    std::vector<coordinate> waypoints;
+    std::size_t current_waypoint;
+
+    std::vector<char> model_chars { '?' };
+    coordinate model_dimensions { 1, 1 };
 };
+
 
 struct torus : public enemy // world_object, i_movable, i_drawable
 {
-    torus(coordinate position) : enemy(position) {} //world_object('#', position, [](){}) {}
+    torus(coordinate position) : enemy(position) 
+    {
+	     model_chars = { 
+	        '/', '=', '=', '\\',
+	        '|', 'X', 'X', '|',
+	        '\\', '=', '=', '/'
+	        };
+
+    	model_dimensions = { 4, 3 };
+    } //world_object('#', position, [](){}) {}
+    
     char get_representation() override 
     {
         return symbol_; 
@@ -67,173 +154,30 @@ struct torus : public enemy // world_object, i_movable, i_drawable
 
     void update(system_clock::duration delta_t) override
     {
+        enemy::update(delta_t);
         erratic(*this, false, true);
-        if (move_intent != STATIC)
-        {
-            move_timer -= delta_t;
-        }
-    }
-
-    void set_move_intent(direction dir) override 
-    {
-    	if (dir == move_intent)
-    		move_intent = STATIC;
-		else
-	    	move_intent = dir; 
-
-	    // todo: sync time
     }
     
-    direction get_move_intent(bool reset = true) override 
-    { 
-        if (reset) 
-        { 
-            auto tmp = move_intent; 
-            move_intent = STATIC; 
-            return tmp;
-        } 
-    	else 
-        	return move_intent; 
-	}
-
-	bool allow_autoscroll() override { return false; }
-
-	coordinate get_position() override { return position_; }
-
-    direction move_intent { STATIC };
-
-    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 250ms; }
-    bool move() override
-    {
-        if (move_timer < 0ms)
-        {
-            move_timer = speed;
-            return true;
-        }
-        return false;
-    }
-
-    bool allow_oob() override { return false; }
-
-    // i_collider
-    bounding_box get_bounding_box() const override
-    {
-        bounding_box bb;
-        bb.top_left = coordinate{position_};
-        bb.dimensions = coordinate{model_dimensions};
-
-        return bb;  // TODO: member & update on move?
-    }
-    
-    void on_collision(i_collider* other) override 
-    {
-    }
-
-    std::vector<char> model_chars { 
-        '/', '=', '=', '\\',
-        '|', 'X', 'X', '|',
-        '\\', '=', '=', '/'
-        };
-    coordinate model_dimensions { 4, 3 };
-    system_clock::duration move_timer { 250ms };
-    system_clock::duration speed { 250ms };
 };
 
-
-struct rhombus : public enemy//, world_object, i_movable, i_drawable
-{
-    rhombus(coordinate position) : enemy(position) {} //world_object('<', position, [](){}) {}
-    char get_representation() override 
-    {
-        return symbol_; 
-    }
-
-    render_info get_render_info() override 
-    {
-        bounding_box bb;
-        bb.top_left = position_;
-        bb.dimensions = model_dimensions;
-
-        return render_info{ bb, model_chars, 'X', 40 };
-    }
-
-    void update(system_clock::duration delta_t) override
-    {
-        erratic(*this);
-        if (move_intent != STATIC)
-        {
-            move_timer -= delta_t;
-        }
-    }
-
-    void set_move_intent(direction dir) override 
-    {
-    	if (dir == move_intent)
-    		move_intent = STATIC;
-		else
-	    	move_intent = dir; 
-
-	    // todo: sync time
-    }
-    
-    direction get_move_intent(bool reset = true) override 
-    { 
-        if (reset) 
-        { 
-            auto tmp = move_intent; 
-            move_intent = STATIC; 
-            return tmp;
-        } 
-    	else 
-        	return move_intent; 
-	}
-
-	bool allow_autoscroll() override { return false; }
-
-	coordinate get_position() override { return position_; }
-
-    direction move_intent { STATIC };
-
-    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 125ms; }
-    bool move() override
-    {
-        if (move_timer < 0ms)
-        {
-            move_timer = speed;
-            return true;
-        }
-        return false;
-    }
-
-    bool allow_oob() override { return false; }
-
-    // i_collider
-    bounding_box get_bounding_box() const override
-    {
-        bounding_box bb;
-        bb.top_left = coordinate{position_};
-        bb.dimensions = coordinate{model_dimensions};
-
-        return bb;  // TODO: member & update on move?
-    }
-    
-    void on_collision(i_collider* other) override 
-    {
-    }
-
-    std::vector<char> model_chars { 
-        '/', '=', '\\',
-        '\\', '=', '/'
-        };
-    coordinate model_dimensions { 3, 2 };
-    system_clock::duration move_timer { 125ms };
-    system_clock::duration speed { 125ms };
-};
 
 
 struct diamond : public enemy//, world_object, i_movable, i_drawable
 {
-    diamond(coordinate position) : enemy(position) {} // world_object('|', position, [](){}) {}
+    diamond(coordinate position) : enemy(position) 
+    {
+    	move_timer = 175ms;
+    	move_speed = 175ms;
+
+		model_chars = { 
+	        '-', '/', '\\', 'X',
+	        '/', ' ', '=', '\\',
+	        '\\', ' ', '=', '/',
+	        '-', '\\', '/', 'X'
+	        };
+        model_dimensions = { 4, 4 };
+    } // world_object('|', position, [](){}) {}
+
     char get_representation() override 
     {
         return symbol_; 
@@ -250,75 +194,7 @@ struct diamond : public enemy//, world_object, i_movable, i_drawable
 
     void update(system_clock::duration delta_t) override
     {
+    	enemy::update(delta_t);
         erratic(*this, true, false);
-        if (move_intent != STATIC)
-        {
-            move_timer -= delta_t;
-        }
     }
-
-    void set_move_intent(direction dir) override 
-    {
-    	if (dir == move_intent)
-    		move_intent = STATIC;
-		else
-	    	move_intent = dir; 
-
-	    // todo: sync time
-    }
-    
-    direction get_move_intent(bool reset = true) override 
-    { 
-        if (reset) 
-        { 
-            auto tmp = move_intent; 
-            move_intent = STATIC; 
-            return tmp;
-        } 
-    	else 
-        	return move_intent; 
-	}
-
-	bool allow_autoscroll() override { return false; }
-
-	coordinate get_position() override { return position_; }
-
-    direction move_intent { STATIC };
-
-    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 175ms; }
-    bool move() override
-    {
-        if (move_timer < 0ms)
-        {
-            move_timer = speed;
-            return true;
-        }
-        return false;
-    }
-
-    bool allow_oob() override { return false; }
-
-    // i_collider
-    bounding_box get_bounding_box() const override
-    {
-        bounding_box bb;
-        bb.top_left = coordinate{position_};
-        bb.dimensions = coordinate{model_dimensions};
-
-        return bb;  // TODO: member & update on move?
-    }
-    
-    void on_collision(i_collider* other) override 
-    {
-    }
-
-    std::vector<char> model_chars { 
-        '-', '/', '\\', 'X',
-        '/', ' ', '=', '\\',
-        '\\', ' ', '=', '/',
-        '-', '\\', '/', 'X'
-        };
-    coordinate model_dimensions { 4, 4 };
-    system_clock::duration move_timer { 175ms };
-    system_clock::duration speed { 175ms };
 };

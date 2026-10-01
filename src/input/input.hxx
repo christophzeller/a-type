@@ -25,11 +25,10 @@ struct input_listener
 
     void add_callback(char key, std::function<void(void)> callback)
     {
-        std::cout << __PRETTY_FUNCTION__ << "\n";
+//        std::cout << __PRETTY_FUNCTION__ << "\n";
         // mutex
         if (callback_map.find(key) == callback_map.end())
         {
-        std::cout << "added callback for " <<  key << "\n";
             callback_map[key] = callback;
         }
     }
@@ -43,7 +42,7 @@ struct input_listener
 
     void input_loop(int tty_fd)
     {
-        std::cout << __PRETTY_FUNCTION__ << "\n";
+//        std::cout << __PRETTY_FUNCTION__ << "\n";
         fd_set keys_fd;
         //auto tty_fd = open("/dev/tty", O_RDWR);
         
@@ -55,14 +54,14 @@ struct input_listener
             auto r_select = select(tty_fd + 1, &keys_fd, NULL, NULL, NULL);
 
             char keys[8];
-            std::fill(keys, keys + 8, ' ');
+            std::fill(keys, keys + 8, '\0');
 
             auto r_read = read(tty_fd, keys, 8);
-            std::string kb_input(keys);
-            std::cout << kb_input << "\n";
+//            std::cout << kb_input << "\n";
 
             if (r_read >= 1)
             {
+                std::string kb_input(keys);
                 if (std::find(kb_input.begin(), kb_input.end(), 'q') != kb_input.end())
                     is_running = false;
 

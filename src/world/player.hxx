@@ -98,10 +98,17 @@ struct player : public world_object, i_movable, i_drawable, i_collider
         '|','/','-' 
         };
 
-    bool shoot()
+    bool attack()
     {
-        return true;
+        if (attack_intent)
+        {
+            attack_intent = false;
+            return true;
+        }
+        return attack_intent;
     }
+
+    std::atomic<bool> attack_intent { false };
 
     std::vector<std::unique_ptr<projectile>> pewpew;
 

@@ -2,6 +2,7 @@
 
 #include "objects.hxx"
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 
 struct star : public world_object, i_drawable, i_movable
@@ -14,7 +15,8 @@ struct star : public world_object, i_drawable, i_movable
 
     void update(std::chrono::system_clock::duration delta_t) override {}
      
-    ~star() = default;    
+    ~star() = default;
+    
     star(const star&) = default;
     star(star&&) = default;
     star& operator=(star&) = default;
@@ -169,7 +171,7 @@ struct asteroid : public world_object, i_movable, i_drawable
     bool move() override { return true; }
     std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 0ms; } // todo:: throttle * scroll rate
 
-    bool allow_oob() override { return false; }
+    bool allow_oob() override { return true; }
 
     // i_drawable
     char get_representation() override 

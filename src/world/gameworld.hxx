@@ -1,6 +1,7 @@
 #pragma once
 
 #include "enemies.hxx"
+#include "rhombus.hxx"
 #include "objects.hxx"
 #include "player.hxx"
 #include "projectile.hxx"
@@ -28,12 +29,6 @@ struct game_world
 
         if (auto* mv = dynamic_cast<i_movable*>(wo))
             movables.push_back(mv);
-
-        if (auto* nm = dynamic_cast<enemy*>(wo))
-            enemies.push_back(nm);
-
-        if (auto* coll = dynamic_cast<i_collider*>(wo))
-            colliders.push_back(coll);
     }
 
     void remove_object(world_object* wo)
@@ -41,8 +36,6 @@ struct game_world
         std::lock_guard<std::mutex> world_guard(world_mutex);
         everything.erase(std::find(everything.begin(), everything.end(), wo));
         
-        std::remove(everything.begin(), everything.end(), wo);
-
         if (auto* drw = dynamic_cast<i_drawable*>(wo))
         {
             drawables.erase(std::find(drawables.begin(), drawables.end(), drw));
@@ -52,49 +45,57 @@ struct game_world
         {
             movables.erase(std::find(movables.begin(), movables.end(), mv));
         }
-
-        if (auto* nm = dynamic_cast<enemy*>(wo))
-        {
-            enemies.erase(std::find(enemies.begin(), enemies.end(), nm));
-        }
-
-        if (auto* coll = dynamic_cast<i_collider*>(wo))
-        {
-            colliders.erase(std::find(colliders.begin(), colliders.end(), coll));
-        }
     }
 
     void process_collisions()
     {
-        for (auto* coll : colliders)
+        std::lock_guard<std::mutex> world_guard(world_mutex);
+        
+        auto collisions = get_collisions(everything);
+        for (const auto& c : collisions)
         {
-            if (is_collision(*the_player, *coll))
+            for (auto o : c)
             {
-                the_player->on_collision(coll);
+                o->position_ = { -100, -100 };
             }
         }
     }
 
     void process_attacks()
     {
-        auto spawn = coordinate {the_player->position_};
-        spawn += coordinate{3, 0};
-        
-        dynamic_spawns.push_back(
-            std::make_unique<projectile>(
-                spawn
-            )
-        );
-        add_object(dynamic_spawns.back().get());
+        std::lock_guard<std::mutex> dog(dynob_mutex);
+        if (the_player->attack())
+        {
+            auto spawn = coordinate {the_player->position_};
+            spawn += coordinate{4, 0};
 
-        spawn += coordinate{0, 2};
+            dynamic_spawns.push_back(
+                std::make_unique<projectile>(
+                    spawn
+                )
+            );
+            add_object(dynamic_spawns.back().get());
+        }
 
-        dynamic_spawns.push_back(
-            std::make_unique<projectile>(
-                spawn
-            )
-        );
-        add_object(dynamic_spawns.back().get());        
+        for (auto& o : dynamic_spawns)
+        {
+            if (auto* nmy = dynamic_cast<enemy*>( o.get() ) ) 
+            {
+                if (nmy->attack())
+                {
+                    auto spawn = coordinate {o->position_};
+                    spawn += coordinate{-5, 0};
+
+                    dynamic_spawns.push_back(
+                        std::make_unique<projectile>(
+                            spawn,
+                            WEST
+                        )
+                    );
+                    add_object(dynamic_spawns.back().get());
+                }
+            }
+        }
     }
 
     void scroll()
@@ -104,7 +105,7 @@ struct game_world
             if (o->allow_autoscroll())
             {
                 move_object(o, WEST, true);
-                if (o->get_position().x <= 0)
+                if (is_oob(o->get_position()))
                 {
                     kill_list.push_back(dynamic_cast<world_object*>(o));
                 }
@@ -114,6 +115,7 @@ struct game_world
 
     void spawn_stars(std::size_t layers=1)
     {
+        std::lock_guard<std::mutex> dog(dynob_mutex);
         for (auto layer = 1; layer <= layers; ++layer)
         {
         	auto step = (layer - 1) ? layer * 4 : 1;
@@ -136,33 +138,64 @@ struct game_world
 
     void cleanup()
     {
+        std::lock_guard<std::mutex> dog(dynob_mutex);
         for (auto* o : kill_list)
         {
             remove_object(o);
-            if (auto s = dynamic_cast<star*>(o))
+            if (auto* s = dynamic_cast<star*>(o))
             {
-                for (auto up = stars.begin(); up != stars.end(); ++up)
+                for (auto up = stars.begin(); up != stars.end(); )
                 {
                     if (up->get() == o)
                     {
-                        stars.erase(up);
+                        up = stars.erase(up);
                         break;
+                    }
+                    else
+                    {
+                        ++up;
                     }
                 }
             }
         }
         kill_list.clear();
+
+        
     }
 
     void on_tick(std::chrono::system_clock::duration delta_t)
     {
+        static auto ctr { 0 };
         for (auto* o : everything) 
+        {
             o->update(delta_t); 
+        }
         for (auto* o : movables) 
+        {
             move_object(o, o->get_move_intent(), o->allow_oob()); 
+        }
 
         process_collisions(); 
-//        process_attacks(); 
+        process_attacks(); 
+
+        std::lock_guard<std::mutex> dog(dynob_mutex);
+        for (auto it = dynamic_spawns.begin(); it != dynamic_spawns.end(); )
+        {
+            if (it->get() == nullptr)
+            {
+                std::cin.get();
+            }
+        
+            if ( is_oob( it->get()->position_ ) )
+            {
+                remove_object(it->get());
+                it = dynamic_spawns.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
     }
     
     void on_scroll(std::chrono::system_clock::duration delta_t)
@@ -173,16 +206,58 @@ struct game_world
         progress += 1; 
     }
 
-    std::vector<std::unique_ptr<world_object>> dynamic_spawns;
-    std::vector<std::unique_ptr<star>> stars;
+    void spawn(int type = -1)
+    {
+        std::lock_guard<std::mutex> dog(dynob_mutex);
+        auto type_ = type;
+        if (type_ == -1)
+            type_ = rand() % 3;
+            
+        auto x = rand() % 35;
+        auto y = rand() % 16;
 
-    std::vector<world_object*> kill_list;
-    std::vector<world_object*> everything;
-    std::vector<i_drawable*> drawables;
-    std::vector<i_movable*> movables;
-    std::vector<i_collider*> colliders;
-    std::vector<enemy*> enemies;
-    player* the_player;
+        switch (type_)
+        {
+            case 1:
+            dynamic_spawns.push_back(
+                std::make_unique<rhombus>(
+                    coordinate { 40 + x, 2 + y }
+                )
+            );
+            break;
+            case 0:
+            dynamic_spawns.push_back(
+                std::make_unique<torus>(
+                    coordinate { 40 + x, 2 + y }
+                )
+            );     
+            break;
+            case 2:
+            dynamic_spawns.push_back(
+                std::make_unique<diamond>(
+                    coordinate { 40 + x, 2 + y }
+                )
+            );
+            break;
+        }   
+        add_object(dynamic_spawns.back().get());
+    }
+
+    void despawn()
+    {
+        
+    }
+
+    std::mutex dynob_mutex {};
+
+    std::vector<std::unique_ptr<world_object>> dynamic_spawns {};
+    std::vector<std::unique_ptr<star>> stars {};
+
+    std::vector<world_object*> kill_list {};
+    std::vector<world_object*> everything {};
+    std::vector<i_drawable*> drawables {};
+    std::vector<i_movable*> movables {};
+    player* the_player { nullptr };
 
     std::size_t progress { 0 };
 };
