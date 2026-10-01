@@ -9,7 +9,6 @@
 #include "../game/enemies/torus.hxx"
 #include "../game/enemies/diamond.hxx"
 
-
 #include "../game/player.hxx"
 #include "../game/projectile.hxx"
 #include "../game/starfield.hxx"
@@ -114,10 +113,6 @@ struct game_world
         }
     }
 
-    void scroll() // TODO: deprecate
-    {
-    }
-
     void spawn_stars(std::size_t layers=1)
     {
         std::lock_guard<std::mutex> dog(dynob_mutex);
@@ -190,9 +185,7 @@ struct game_world
     
     void on_scroll(std::chrono::system_clock::duration delta_t)
     { // TODO: move to on_tick with scroll_timer
-        //scroll(); 
         spawn_stars(3); 
-        //cleanup(); 
         progress += 1; 
     }
 
@@ -242,11 +235,6 @@ struct game_world
             break;
         }   
         add_object(dynamic_spawns.back().get());
-    }
-
-    void despawn()
-    {
-        
     }
 
     std::mutex dynob_mutex {};

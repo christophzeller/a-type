@@ -2,7 +2,7 @@
 
 #include "../world/objects.hxx"
 #include "../world/game_world.hxx"
-#include "../world/engine.hxx"
+#include "../world/engine_state.hxx"
 
 #include <chrono>
 #include <cstddef>
@@ -40,7 +40,7 @@ struct terminal
 struct i_render_strategy
 {
     virtual void draw_world(game_world& gw) = 0;
-    virtual void draw_ui(engine_state& es, game_world& gw) = 0;
+    virtual void draw_ui(engine_state es, game_world& gw) = 0;
 };
 
 /*struct render_static : public i_render_strategy
@@ -52,7 +52,7 @@ struct i_render_strategy
 struct render_autoscroll : public i_render_strategy
 {
     void draw_world(game_world& gw) override;
-    void draw_ui(engine_state& es, game_world& gw) override;
+    void draw_ui(engine_state es, game_world& gw) override;
 };
 
 
@@ -66,16 +66,15 @@ struct terminal_screen
         depth_info depth;
     };
 
-    explicit terminal_screen(engine_state& es, game_world& gw, i_render_strategy& renderer, int fd=0);
+    explicit terminal_screen(i_render_strategy& renderer, int fd=0);
     virtual ~terminal_screen();
 
-    void draw() 
+    void draw(engine_state es, game_world& gw) 
     {
         auto t0 = system_clock::now();
-        renderer_.draw_world(gw_); 
+        renderer_.draw_world(gw); 
         auto t1 = system_clock::now();
-        es_.render_t = t1 - t0;
-        renderer_.draw_ui(es_, gw_); 
+        renderer_.draw_ui(es, gw); 
     };
 
     inline int fd() { return tty_fd; }
@@ -86,8 +85,6 @@ private:
 
     system_clock::duration render_time;
 
-    game_world& gw_;
-    engine_state& es_;
     struct termios original_terminal_settings;
 
     int tty_fd { -1 };
@@ -108,10 +105,8 @@ terminal_screen::buffer terminal_screen::get_renderbuffer()
     return tmp;
 }
 
-terminal_screen::terminal_screen(engine_state& es, game_world& gw, i_render_strategy& renderer, int fd)
- : gw_(gw)
- , es_(es)
- , renderer_(renderer)
+terminal_screen::terminal_screen(i_render_strategy& renderer, int fd)
+ : renderer_(renderer)
  , tty_fd(fd)
 {
     std::cout << __PRETTY_FUNCTION__ << "\n";
@@ -186,7 +181,6 @@ void render_object(terminal_screen::render_buffers& rb, i_drawable* object)
     }
 }
 
-
 void render_autoscroll::draw_world(game_world& gw)
 {
     auto buf = get_renderbuffers();
@@ -211,7 +205,7 @@ void render_autoscroll::draw_world(game_world& gw)
 
 }
 
-void render_autoscroll::draw_ui(engine_state& es, game_world& gw)
+void render_autoscroll::draw_ui(engine_state es, game_world& gw)
 {
     auto width = 80;
     std::string mt { "" };
@@ -226,5 +220,4 @@ void render_autoscroll::draw_ui(engine_state& es, game_world& gw)
     distance += std::to_string(gw.progress);
 
     std::cout << (false ? paused : mt) << "\n" << instructions << "\n" << distance << "\n";
-    std::cout << debug << es.delta_t.count() << "::" << es.render_t.count() << mt;
 }

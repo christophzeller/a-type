@@ -21,6 +21,7 @@ add_executable(a-type
 		src/world/objects.hxx
 		src/world/utilities.hxx
 		src/world/engine.hxx
+		src/world/engine_state.hxx
 		src/world/game_world.hxx
 
 
