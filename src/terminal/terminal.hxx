@@ -40,7 +40,6 @@ struct terminal
     }
 
     int tty_fd;
-
 };
 
 
@@ -168,10 +167,6 @@ bool is_in_screenspace(const coordinate& c)
 void render_object(terminal_screen::render_buffers& rb, i_drawable* object)
 {
     render_info ri = object->get_render_info();
-    if (!object) {
-        std::cout << "                                                                                                                              PROBLEM\n";
-        std::cin.get();
-    }
     
     for (auto j = 0; j < ri.bb.dimensions.y; ++j)
     {
@@ -215,7 +210,6 @@ void render_autoscroll::draw_world(game_world& gw)
     {
         zipped += line;
         zipped += "\n";
-//        std::cout << line << "\n";
     }
     std::cout << zipped;
 

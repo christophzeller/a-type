@@ -26,7 +26,7 @@ struct input_listener
     void add_callback(char key, std::function<void(void)> callback)
     {
 //        std::cout << __PRETTY_FUNCTION__ << "\n";
-        // mutex
+        // TODO: add mutex when key bindings become mutable after thread start
         if (callback_map.find(key) == callback_map.end())
         {
             callback_map[key] = callback;
@@ -42,9 +42,7 @@ struct input_listener
 
     void input_loop(int tty_fd)
     {
-//        std::cout << __PRETTY_FUNCTION__ << "\n";
         fd_set keys_fd;
-        //auto tty_fd = open("/dev/tty", O_RDWR);
         
         while (is_running)
         {
@@ -57,7 +55,6 @@ struct input_listener
             std::fill(keys, keys + 8, '\0');
 
             auto r_read = read(tty_fd, keys, 8);
-//            std::cout << kb_input << "\n";
 
             if (r_read >= 1)
             {

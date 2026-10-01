@@ -82,8 +82,8 @@ struct world_object
     std::function<void(void)> logic_; // TODO: void(duration) ? 
     // TODO: callbacks?
 
+    // TODO: use for object management
     static std::size_t instance_counter;
-    //std::size_t instance_id { instance_counter++ };
 };
 
 std::size_t world_object::instance_counter = 0;
@@ -91,7 +91,7 @@ std::size_t world_object::instance_counter = 0;
 struct i_movable
 {
     virtual void set_move_intent(direction dir) = 0;
-    virtual direction get_move_intent(bool reset=false) = 0; // const?
+    virtual direction get_move_intent(bool reset=false) = 0;
     virtual bool move() = 0;
     virtual coordinate get_position() = 0; 
     virtual bool allow_oob() const = 0;
@@ -107,7 +107,7 @@ struct render_info
 
 struct i_drawable
 {
-    virtual render_info get_render_info()= 0; // const
+    virtual render_info get_render_info() = 0;
 };
 
 struct i_collider
@@ -169,6 +169,9 @@ collision_list get_collisions(const std::vector<world_object*> objects)
                 continue;
 
             if (is_oob(rhs->position_))
+                continue;
+
+            if (is_oob(lhs->position_))
                 continue;
 
             if (is_collision(lhs, rhs))
