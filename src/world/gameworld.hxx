@@ -99,7 +99,7 @@ struct game_world
     }
 
     void scroll()
-    {
+    {/*
        for (auto* o : movables) // TODO: autoscrolls? 
         {
             if (o->allow_autoscroll())
@@ -110,7 +110,7 @@ struct game_world
                     kill_list.push_back(dynamic_cast<world_object*>(o));
                 }
             }
-        }
+        }*/
     }
 
     void spawn_stars(std::size_t layers=1)
@@ -124,20 +124,20 @@ struct game_world
     	    	const auto& star_list = star_loop[(progress / step )% 80];
     	        for (auto sy : star_list)
     	        {
-    	        	// TODO: fiddle with coordinate manipulation
-    	            stars.push_back(
+    	            dynamic_spawns.push_back(
     	            	std::make_unique<star>(
     	            		coordinate(79, (layer % 2 == 0) ? 23 - sy : sy)
-    	            		, (layer == 1) ? '.' : '.'
-    	            		, layer));
-    	            add_object(stars.back().get());
+    	            		//, (layer == 1) ? '.' : '.'
+    	            		, layer * milliseconds(100))
+    	            		);
+    	            add_object(dynamic_spawns.back().get());
     	    	}
         	} 
         }
     }
 
     void cleanup()
-    {
+    {/*
         std::lock_guard<std::mutex> dog(dynob_mutex);
         for (auto* o : kill_list)
         {
@@ -159,7 +159,7 @@ struct game_world
             }
         }
         kill_list.clear();
-
+*/
         
     }
 

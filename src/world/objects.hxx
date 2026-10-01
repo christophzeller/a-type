@@ -66,6 +66,7 @@ bool is_oob(coordinate c)
 struct world_object
 {
     world_object() = delete;
+    world_object(coordinate position) : position_(position) {}
     world_object(coordinate position, std::function<void(void)> logic) : position_(position), logic_(logic) {}
     world_object(char symbol, coordinate position, std::function<void(void)> logic) : symbol_(symbol), position_(position), logic_(logic) {} // TODO: deprecate
     virtual ~world_object() = default;
@@ -79,7 +80,6 @@ struct world_object
     char symbol_ { '?' }; // TODO: deprecate
     coordinate position_;
     std::function<void(void)> logic_; // TODO: void(duration) ? 
-    std::function<void(void)> self_destruct;
     // TODO: callbacks?
 
     static std::size_t instance_counter;

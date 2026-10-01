@@ -1,19 +1,28 @@
 #pragma once
 
 #include "objects.hxx"
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
 
+using namespace std::chrono;
+using namespace std::literals::chrono_literals;
+
 struct star : public world_object, i_drawable, i_movable
 {
     star() = delete;
-    explicit star(coordinate position, char symbol='*', std::size_t scroll_throttle=1) 
-     : world_object(symbol, position, [](){})
-     , throttle(scroll_throttle)
-    {}
+    explicit star(coordinate position, system_clock::duration mv_speed=100ms) : world_object(position), move_speed(mv_speed)
+    {
+    }
 
-    void update(std::chrono::system_clock::duration delta_t) override {}
+    void update(system_clock::duration delta_t) override 
+    {
+        move_timer -= delta_t;
+        if (blink_timer > 0ms)
+            blink_timer -= delta_t;
+        
+    }
      
     ~star() = default;
     
@@ -24,57 +33,68 @@ struct star : public world_object, i_drawable, i_movable
     
     char get_representation() override 
     {
-        if ((draw_count % blink_frequency) != 0)
-        {
-            ++draw_count;
-            return symbol_;
-        }
-
-        if (blink_duration > 0)
-        {
-            --blink_duration;
-            return ' ';
-        }
-
-        draw_count = 1;
-        blink_duration = 4;
-        return ' ';
+        return 'X';
         
+    }
+
+    void twinkle()
+    {
+        if (blink_timer > 0ms)
+            return;
+        else if (model[0] != '.')
+            model[0] = '.';
+
+        auto twink = (std::rand() % 350001) == 0;
+
+        if (twink)
+        {
+            blink_timer = blink_duration;
+            model[0] = ' ';
+        }
     }
 
     render_info get_render_info() override 
     {
+        twinkle();
+        
         bounding_box bb;
         bb.top_left = position_;
         bb.dimensions = {1, 1};
-        model[0] = get_representation();
         return render_info{ bb, model };
     }
-    
+
     void set_move_intent(direction dir) override {}
-    direction get_move_intent(bool reset=false) override { return STATIC; }
+    direction get_move_intent(bool reset=false) override { return WEST; }
 
     bool allow_autoscroll() override 
     { 
-        if (scroll_count++ % throttle)
-            return false;
-        else
-            return true;
+        return false;
     }
-    bool move() override { return true; }
+
+    bool move() override
+    {
+        if (move_timer < 0ms)
+        {	
+            move_timer = move_speed;
+            return true;
+        }
+        return false;
+    }
+
     coordinate get_position() override { return position_; }
-    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 0ms; } // todo:: throttle * scroll rate
+    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return move_speed; } // todo:: throttle * scroll rate
 
-    bool allow_oob() override { return false; }
+    bool allow_oob() override { return true; }
 
-    std::vector<char> model { '*' };
+    std::vector<char> model { '.' };
+    system_clock::duration move_timer { 100ms };
+    system_clock::duration move_speed { 100ms };
+
+    system_clock::duration blink_timer { 0ms };
+    system_clock::duration blink_duration { 300ms };
 
     std::size_t blink_frequency { 1013 };
     std::size_t draw_count { std::rand() % blink_frequency };
-    std::size_t blink_duration { 4 };
-
-    std::size_t throttle { 1 };
-    std::size_t scroll_count { 0 };
 };
 
 std::map<std::size_t, std::vector<int>> star_loop = 
