@@ -72,7 +72,6 @@ void move_object(i_movable* movable, direction dir, bool allow_oob=false)
         move_object(*dynamic_cast<world_object*>(movable), dir, allow_oob);
 }
 
-// game_state ?
 struct engine_state
 {
 	void tick()
@@ -83,7 +82,6 @@ struct engine_state
 		now = system_clock::now();
 
 		delta_t = now - last_tick;
-//		std::cout << "                                                              dt: " << delta_t.count() << "\n";
 
 		on_tick(delta_t);
 		if (now >= next_tick)
@@ -119,18 +117,4 @@ struct engine_state
 
     system_clock::duration delta_t;
     std::size_t current_tick { 0 };
-};
-
-struct i_autoscroller
-{
-    virtual std::size_t get_progress() = 0;
-    virtual std::size_t get_speed() = 0;
-};
-
-struct my_game : public i_autoscroller
-{
-    std::size_t get_progress() override { return progress; }
-    std::size_t get_speed() override { return 8; }
-
-    std::size_t progress { 0 };
 };

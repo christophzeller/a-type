@@ -46,7 +46,6 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider
         }
     }
 
-    char get_representation() override { return '?'; }
     render_info get_render_info() override { return render_info(); }
 
     void set_move_intent(direction dir) override 
@@ -67,7 +66,6 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider
         	return move_intent; 
 	}
 
-    bool allow_autoscroll() override { return false; }
     coordinate get_position() override { return position_; }
 
     bool move() override
@@ -80,8 +78,7 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider
         return false;
     }
 
-    std::chrono::system_clock::duration get_speed() override { return move_speed; }
-    bool allow_oob() override { return false; }
+    bool allow_oob() const override { return false; }
 
     bounding_box get_bounding_box() const override
     {
@@ -136,13 +133,8 @@ struct torus : public enemy // world_object, i_movable, i_drawable
 	        };
 
     	model_dimensions = { 4, 3 };
-    } //world_object('#', position, [](){}) {}
-    
-    char get_representation() override 
-    {
-        return symbol_; 
     }
-
+    
     render_info get_render_info() override 
     {
         bounding_box bb;
@@ -176,11 +168,6 @@ struct diamond : public enemy//, world_object, i_movable, i_drawable
 	        '-', '\\', '/', 'X'
 	        };
         model_dimensions = { 4, 4 };
-    } // world_object('|', position, [](){}) {}
-
-    char get_representation() override 
-    {
-        return symbol_; 
     }
 
     render_info get_render_info() override 

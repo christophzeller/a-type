@@ -31,12 +31,6 @@ struct star : public world_object, i_drawable, i_movable
     star& operator=(star&) = default;
     star& operator=(star&&) = default;
     
-    char get_representation() override 
-    {
-        return 'X';
-        
-    }
-
     void twinkle()
     {
         if (blink_timer > 0ms)
@@ -66,11 +60,6 @@ struct star : public world_object, i_drawable, i_movable
     void set_move_intent(direction dir) override {}
     direction get_move_intent(bool reset=false) override { return WEST; }
 
-    bool allow_autoscroll() override 
-    { 
-        return false;
-    }
-
     bool move() override
     {
         if (move_timer < 0ms)
@@ -82,9 +71,8 @@ struct star : public world_object, i_drawable, i_movable
     }
 
     coordinate get_position() override { return position_; }
-    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return move_speed; } // todo:: throttle * scroll rate
 
-    bool allow_oob() override { return true; }
+    bool allow_oob() const override { return true; }
 
     std::vector<char> model { '.' };
     system_clock::duration move_timer { 100ms };
@@ -148,7 +136,8 @@ std::map<std::size_t, std::vector<int>> star_loop =
 };
 
 
-
+// TODO: adapt to consolidated draw and move logic
+#if 0 
 struct asteroid : public world_object, i_movable, i_drawable
 {
     asteroid(coordinate position)
@@ -185,20 +174,13 @@ struct asteroid : public world_object, i_movable, i_drawable
         return drift_dir;
     }
 
-    bool allow_autoscroll() override { return true; }
     coordinate get_position() override { return position_; };
 
     bool move() override { return true; }
-    std::chrono::system_clock::duration get_speed() override { using namespace std::literals::chrono_literals; return 0ms; } // todo:: throttle * scroll rate
 
     bool allow_oob() override { return true; }
 
     // i_drawable
-    char get_representation() override 
-    {
-        return animation[animation_index++ % 8]; 
-    }
- 
     render_info get_render_info() override 
     {
         bounding_box bb;
@@ -218,3 +200,4 @@ struct asteroid : public world_object, i_movable, i_drawable
 
     direction drift_dir { STATIC };
 };
+#endif

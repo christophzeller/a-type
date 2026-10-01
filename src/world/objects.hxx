@@ -93,10 +93,8 @@ struct i_movable
     virtual void set_move_intent(direction dir) = 0;
     virtual direction get_move_intent(bool reset=false) = 0; // const?
     virtual bool move() = 0;
-    virtual bool allow_autoscroll() = 0; // const
     virtual coordinate get_position() = 0; 
-    virtual std::chrono::system_clock::duration get_speed() = 0; // const
-    virtual bool allow_oob() = 0;
+    virtual bool allow_oob() const = 0;
 };
 
 struct render_info
@@ -109,7 +107,6 @@ struct render_info
 
 struct i_drawable
 {
-    virtual char get_representation() = 0; // TODO: deprecate
     virtual render_info get_render_info()= 0; // const
 };
 

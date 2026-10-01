@@ -14,11 +14,6 @@ struct projectile : public world_object, i_movable, i_drawable, i_collider
     ~projectile() = default;
 
     // i_drawable
-    char get_representation() override 
-    {
-        return symbol_; 
-    }
-
     render_info get_render_info() override 
     {
         bounding_box bb;
@@ -51,13 +46,10 @@ struct projectile : public world_object, i_movable, i_drawable, i_collider
     	return move_intent; 
 	}
 
-	bool allow_autoscroll() override { return false; }
-
 	coordinate get_position() override { return position_; }
 
     direction move_intent { EAST };
 
-    std::chrono::system_clock::duration get_speed() override { return speed; }
     bool move() override
     {
         if (move_timer < 0ms)
@@ -68,7 +60,7 @@ struct projectile : public world_object, i_movable, i_drawable, i_collider
         return false;
     }
 
-    bool allow_oob() override { return true; }
+    bool allow_oob() const override { return true; }
 
     // i_collider
     bounding_box get_bounding_box() const 

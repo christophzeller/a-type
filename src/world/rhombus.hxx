@@ -22,11 +22,6 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
                         
     } //world_object('<', position, [](){}) {}
 
-    char get_representation() override 
-    {
-        return symbol_; 
-    }
-
     render_info get_render_info() override 
     {
         bounding_box bb;
@@ -48,5 +43,5 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
         }
     }
 
-    bool allow_oob() override { return true; }
+    bool allow_oob() const override { return true; }
 };
