@@ -98,19 +98,8 @@ struct game_world
         }
     }
 
-    void scroll()
-    {/*
-       for (auto* o : movables) // TODO: autoscrolls? 
-        {
-            if (o->allow_autoscroll())
-            {
-                move_object(o, WEST, true);
-                if (is_oob(o->get_position()))
-                {
-                    kill_list.push_back(dynamic_cast<world_object*>(o));
-                }
-            }
-        }*/
+    void scroll() // TODO: deprecate
+    {
     }
 
     void spawn_stars(std::size_t layers=1)
@@ -124,10 +113,10 @@ struct game_world
     	    	const auto& star_list = star_loop[(progress / step )% 80];
     	        for (auto sy : star_list)
     	        {
+    	            auto y = (sy + progress % 80) % 23;
     	            dynamic_spawns.push_back(
     	            	std::make_unique<star>(
     	            		coordinate(79, (layer % 2 == 0) ? 23 - sy : sy)
-    	            		//, (layer == 1) ? '.' : '.'
     	            		, layer * milliseconds(100))
     	            		);
     	            add_object(dynamic_spawns.back().get());
@@ -137,47 +126,7 @@ struct game_world
     }
 
     void cleanup()
-    {/*
-        std::lock_guard<std::mutex> dog(dynob_mutex);
-        for (auto* o : kill_list)
-        {
-            remove_object(o);
-            if (auto* s = dynamic_cast<star*>(o))
-            {
-                for (auto up = stars.begin(); up != stars.end(); )
-                {
-                    if (up->get() == o)
-                    {
-                        up = stars.erase(up);
-                        break;
-                    }
-                    else
-                    {
-                        ++up;
-                    }
-                }
-            }
-        }
-        kill_list.clear();
-*/
-        
-    }
-
-    void on_tick(std::chrono::system_clock::duration delta_t)
     {
-        static auto ctr { 0 };
-        for (auto* o : everything) 
-        {
-            o->update(delta_t); 
-        }
-        for (auto* o : movables) 
-        {
-            move_object(o, o->get_move_intent(), o->allow_oob()); 
-        }
-
-        process_collisions(); 
-        process_attacks(); 
-
         std::lock_guard<std::mutex> dog(dynob_mutex);
         for (auto it = dynamic_spawns.begin(); it != dynamic_spawns.end(); )
         {
@@ -197,12 +146,30 @@ struct game_world
             }
         }
     }
+
+    void on_tick(std::chrono::system_clock::duration delta_t)
+    {
+        static auto ctr { 0 };
+        for (auto* o : everything) 
+        {
+            o->update(delta_t); 
+        }
+        for (auto* o : movables) 
+        {
+            move_object(o, o->get_move_intent(), o->allow_oob()); 
+        }
+
+        process_collisions(); 
+        process_attacks(); 
+
+        cleanup();
+    }
     
     void on_scroll(std::chrono::system_clock::duration delta_t)
-    {
-        scroll(); 
+    { // TODO: move to on_tick with scroll_timer
+        //scroll(); 
         spawn_stars(3); 
-        cleanup(); 
+        //cleanup(); 
         progress += 1; 
     }
 
