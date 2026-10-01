@@ -1,6 +1,7 @@
 #pragma once
 
-#include "objects.hxx"
+#include "../world/objects.hxx"
+#include "../world/utilities.hxx"
 #include <chrono>
 #include <cstdlib>
 #include <iostream>

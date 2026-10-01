@@ -1,19 +1,14 @@
 #pragma once
 
 #include "../world/objects.hxx"
-#include "../world/enemies.hxx"
+#include "../world/game_world.hxx"
+#include "../world/engine.hxx"
 
-#include "../world/gameworld.hxx"
-
-#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
-#include <format>
-#include <functional>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <vector>
 

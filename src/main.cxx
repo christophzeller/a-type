@@ -1,25 +1,19 @@
 #include "ai/ai.hxx"
 #include "input/input.hxx"
 #include "terminal/terminal.hxx"
-#include "world/gameworld.hxx"
-#include "world/projectile.hxx"
-#include "world/starfield.hxx"
-#include "world/enemies.hxx"
-#include "world/player.hxx"
-#include "world/world.hxx"
+#include "world/game_world.hxx"
+#include "game/projectile.hxx"
+#include "game/starfield.hxx"
+#include "game/enemies/enemies.hxx"
+#include "game/player.hxx"
+#include "world/engine.hxx"
 
-#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
-#include <cstdio>
-#include <cstdlib>
 #include <ctime>
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <string>
+#include <cstdlib>
 #include <thread>
 #include <vector>
 
@@ -76,12 +70,9 @@ int main()
 {
     std::srand(std::time({}));
 
-//    player p { { 20, 10 } };
-
     game_world gw;
     gw.dynamic_spawns.reserve(128);
     gw.stars.reserve(384);
-//    gw.add_object(&p);
 
     terminal t {};
     auto fd = t.tty_fd;

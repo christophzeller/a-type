@@ -1,11 +1,9 @@
 #pragma once
 
-#include "objects.hxx"
-#include "projectile.hxx"
+#include "../world/objects.hxx"
+#include "../world/utilities.hxx"
 
 #include <chrono>
-#include <memory>
-#include <vector>
 
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
@@ -120,8 +118,6 @@ struct player : public world_object, i_movable, i_drawable, i_collider, i_attack
     }
 
     std::atomic<bool> attack_intent { false };
-
-    std::vector<std::unique_ptr<projectile>> pewpew;
 
     hardpoints guns { };
     coordinate model_dimensions { 3, 3 };

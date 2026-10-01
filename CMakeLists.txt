@@ -9,12 +9,19 @@ add_executable(a-type
 
 		src/terminal/terminal.hxx
 
-		src/world/enemies.hxx
-		src/world/gameworld.hxx
+		src/game/player.hxx
+		src/game/projectile.hxx
+		src/game/starfield.hxx
+
+		src/game/enemies/enemies.hxx
+		src/game/enemies/rhombus.hxx
+		src/game/enemies/torus.hxx
+		src/game/enemies/diamond.hxx
+
 		src/world/objects.hxx
-		src/world/player.hxx
-		src/world/projectile.hxx
-		src/world/rhombus.hxx
-		src/world/starfield.hxx
-		src/world/world.hxx
+		src/world/utilities.hxx
+		src/world/engine.hxx
+		src/world/game_world.hxx
+
+
 	)

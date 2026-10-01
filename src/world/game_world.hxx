@@ -1,18 +1,28 @@
 #pragma once
 
-#include "enemies.hxx"
-#include "rhombus.hxx"
+
 #include "objects.hxx"
-#include "player.hxx"
-#include "projectile.hxx"
-#include "starfield.hxx"
-#include "world.hxx"
+#include "utilities.hxx"
+
+#include "../game/enemies/enemies.hxx"
+#include "../game/enemies/rhombus.hxx"
+#include "../game/enemies/torus.hxx"
+#include "../game/enemies/diamond.hxx"
+
+
+#include "../game/player.hxx"
+#include "../game/projectile.hxx"
+#include "../game/starfield.hxx"
 
 #include <algorithm>
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <vector>
+
+#include <cstddef>
+
+std::mutex world_mutex;
 
 struct game_world
 {
@@ -163,9 +173,13 @@ struct game_world
                 o->update(delta_t); 
             }
         }
-        for (auto* o : movables) 
+
         {
-            move_object(o, o->get_move_intent(), o->allow_oob()); 
+            std::lock_guard<std::mutex> wog(world_mutex);
+            for (auto* o : movables) 
+            {
+                move_object(o, o->get_move_intent(), o->allow_oob()); 
+            }
         }
 
         process_collisions(); 
