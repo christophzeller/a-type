@@ -38,7 +38,10 @@ struct game_world
     {
         std::lock_guard<std::mutex> world_guard(world_mutex);
         everything.erase(std::find(everything.begin(), everything.end(), wo));
-        
+
+        if (auto* plyr = dynamic_cast<player*>(wo))
+            the_player = nullptr;
+            
         if (auto* drw = dynamic_cast<i_drawable*>(wo))
         {
             drawables.erase(std::find(drawables.begin(), drawables.end(), drw));
@@ -69,6 +72,19 @@ struct game_world
         }
     }
 
+
+    void spawn_projectile(coordinate position, attack_info ai)
+    {
+        dynamic_spawns.push_back(
+            std::make_unique<projectile>(
+                position,
+                ai.dir
+            )
+        );
+        add_object(dynamic_spawns.back().get());
+    }
+
+
     void process_attacks()
     {
         std::lock_guard<std::mutex> dog(dynob_mutex);
@@ -82,14 +98,7 @@ struct game_world
                 {
                     auto spawn = ai.position;
                     spawn += hp;
-
-                    dynamic_spawns.push_back(
-                        std::make_unique<projectile>(
-                            spawn,
-                            ai.dir
-                        )
-                    );
-                    add_object(dynamic_spawns.back().get());
+                    spawn_projectile(spawn, ai);
                 }
             }
         }
@@ -147,9 +156,12 @@ struct game_world
     void on_tick(std::chrono::system_clock::duration delta_t)
     {
         static auto ctr { 0 };
-        for (auto* o : everything) 
         {
-            o->update(delta_t); 
+            std::lock_guard<std::mutex> dog(dynob_mutex);
+            for (auto* o : everything) 
+            {
+                o->update(delta_t); 
+            }
         }
         for (auto* o : movables) 
         {
@@ -182,26 +194,37 @@ struct game_world
 
         switch (type_)
         {
-            case 1:
-            dynamic_spawns.push_back(
-                std::make_unique<rhombus>(
-                    coordinate { 40 + x, 2 + y }
-                )
-            );
-            break;
             case 0:
-            dynamic_spawns.push_back(
-                std::make_unique<torus>(
-                    coordinate { 40 + x, 2 + y }
-                )
-            );     
+                dynamic_spawns.push_back(
+                    std::make_unique<rhombus>(
+                        coordinate { 40 + x, 2 + y }
+                    )
+                );
+            break;
+            case 1:
+                dynamic_spawns.push_back(
+                    std::make_unique<torus>(
+                        coordinate { 40 + x, 2 + y }
+                    )
+                );     
             break;
             case 2:
-            dynamic_spawns.push_back(
-                std::make_unique<diamond>(
-                    coordinate { 40 + x, 2 + y }
-                )
-            );
+                dynamic_spawns.push_back(
+                    std::make_unique<diamond>(
+                        coordinate { 40 + x, 2 + y }
+                    )
+                );
+            break;
+            case 42:
+                if (!the_player)
+                {
+                    dynamic_spawns.push_back(
+                        std::make_unique<player>(
+                            coordinate {20, 10}
+                        )
+                    );
+                    the_player = dynamic_cast<player*>(dynamic_spawns.back().get());
+                }
             break;
         }   
         add_object(dynamic_spawns.back().get());

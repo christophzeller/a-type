@@ -76,12 +76,12 @@ int main()
 {
     std::srand(std::time({}));
 
-    player p { { 20, 10 } };
+//    player p { { 20, 10 } };
 
     game_world gw;
     gw.dynamic_spawns.reserve(128);
     gw.stars.reserve(384);
-    gw.add_object(&p);
+//    gw.add_object(&p);
 
     terminal t {};
     auto fd = t.tty_fd;
@@ -92,23 +92,29 @@ int main()
     terminal_screen term(es, gw, renderer, fd);
 
 
-    input.add_callback('w', [&p](){
-        p.set_move_intent(NORTH);
+    input.add_callback('w', [&gw](){
+        if (gw.the_player)
+            gw.the_player->set_move_intent(NORTH);
     });
-    input.add_callback('a', [&p](){
-        p.set_move_intent(WEST);
+    input.add_callback('a', [&gw](){
+        if (gw.the_player)
+            gw.the_player->set_move_intent(WEST);
     });
-    input.add_callback('s', [&p](){
-        p.set_move_intent(SOUTH);
+    input.add_callback('s', [&gw](){
+        if (gw.the_player)
+            gw.the_player->set_move_intent(SOUTH);
     });
-    input.add_callback('d', [&p](){
-        p.set_move_intent(EAST);
+    input.add_callback('d', [&gw](){
+        if (gw.the_player)
+            gw.the_player->set_move_intent(EAST);
     });
-    input.add_callback(' ', [&p](){ 
-        p.set_move_intent(STATIC); 
+    input.add_callback(' ', [&gw](){ 
+        if (gw.the_player)
+            gw.the_player->set_move_intent(STATIC); 
     });
-    input.add_callback('f', [&p](){
-        p.attack_intent = true;
+    input.add_callback('f', [&gw](){
+        if (gw.the_player)
+            gw.the_player->attack_intent = true;
     });
     input.add_callback('r', [&gw](){
         gw.spawn(0); 
@@ -122,6 +128,10 @@ int main()
     input.add_callback('e', [&gw](){
         gw.spawn(-1); 
     });
+    input.add_callback('*', [&gw](){
+        gw.spawn(42); 
+    });
+    
 
     std::thread render_thread { render_loop, std::ref(term), std::ref(es) };
     std::thread logic_thread { logic_loop, std::ref(gw), std::ref(es) };
