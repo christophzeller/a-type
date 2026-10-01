@@ -74,6 +74,15 @@ struct star : public world_object, i_drawable, i_movable
 
     bool allow_oob() const override { return true; }
 
+    extents get_extents() const
+    {
+        bounding_box bb;
+        bb.top_left = coordinate {position_};
+        bb.dimensions = {1, 1};
+        
+        return ::get_extents(bb);
+    }
+
     std::vector<char> model { '.' };
     system_clock::duration move_timer { 100ms };
     system_clock::duration move_speed { 100ms };

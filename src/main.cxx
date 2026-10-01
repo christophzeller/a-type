@@ -29,15 +29,20 @@
 #include <unistd.h>
 
 using namespace std::chrono;
+using namespace std::literals::chrono_literals;
 
 void render_loop(terminal_screen& term, engine_state& es)
 {
     using namespace std::literals::chrono_literals;
 
+    time_point<system_clock> next_frame = system_clock::now();
+    system_clock::duration frame_time { 33ms };
+
     std::map<std::size_t, std::vector<world_object*>> activation_list;
     
     while (es.is_running)
     {
+        next_frame = system_clock::now() + frame_time;
         term.draw();
     }
 }
@@ -46,9 +51,8 @@ void logic_loop(game_world& gw, engine_state& es)
 {
     using namespace std::literals::chrono_literals;
     using namespace std::placeholders;
-    auto next_autoscroll = system_clock::now() + 150ms;
-
-    std::vector<std::unique_ptr<world_object>> dynamic_spawns;
+    auto next_frame = system_clock::now() + 150ms;
+    system_clock::duration frame_time { 33ms };
 
     es.scroll_rate = 100ms;
 
@@ -60,7 +64,11 @@ void logic_loop(game_world& gw, engine_state& es)
         std::unique_lock pause_lock(es.pause_mutex);
         es.pause_cv.wait(pause_lock, [&es](){ return !es.is_paused; });
 
+        next_frame = system_clock::now() + frame_time;
         es.tick();
+        auto throttle = next_frame - system_clock::now();
+        if (throttle > 0ms)
+            std::this_thread::sleep_for(5ms);
     }
 }
 

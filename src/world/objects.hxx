@@ -47,6 +47,21 @@ struct bounding_box
     coordinate dimensions {1, 1};
 };
 
+struct extents
+{
+    coordinate minima { 0, 0 };
+    coordinate maxima { 0, 0 };
+};
+
+extents get_extents(const bounding_box bb)
+{
+    return (extents {
+        bb.top_left,
+        coordinate { bb.top_left.x + bb.dimensions.x - 1, 
+                    bb.top_left.y + bb.dimensions.y - 1 }
+    });
+}
+
 coordinate get_random_coord()
 {
     auto x = rand() % 79;
@@ -76,6 +91,7 @@ struct world_object
     world_object& operator=(world_object&& other) = default;
 
     virtual void update(system_clock::duration delta_t) { logic_(); };
+    virtual extents get_extents() const = 0;
 
     char symbol_ { '?' }; // TODO: deprecate
     coordinate position_;

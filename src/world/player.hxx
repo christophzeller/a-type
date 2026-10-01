@@ -70,6 +70,11 @@ struct player : public world_object, i_movable, i_drawable, i_collider
 
     bool allow_oob() const override { return false; }
 
+    extents get_extents() const
+    {
+        return ::get_extents(get_bounding_box());
+    }
+
     // i_collider
     bounding_box get_bounding_box() const 
     {

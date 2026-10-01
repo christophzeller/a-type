@@ -29,11 +29,22 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
 {
     std::lock_guard<std::mutex> world_guard(world_mutex);
 
+    bool oob { false };
+    auto ext = object.get_extents();
+    if (is_oob(ext.minima) || is_oob(ext.maxima))
+        oob = true;
+
+    auto x_offset = ext.maxima.x - ext.minima.x;
+    auto y_offset = ext.maxima.y - ext.minima.y;
+
     switch(dir)
     {
     case NORTH:
         if (!allow_oob)
-            object.position_.y = std::clamp( object.position_.y -= 1, 0, 23); //w N
+        {
+            if (!oob)
+                object.position_.y = std::clamp( object.position_.y -= 1, 0, 23 ); //w N
+        }
         else
         {
             object.position_.y -= 1;
@@ -41,7 +52,10 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         break;
     case WEST:
         if (!allow_oob)
-            object.position_.x = std::clamp( object.position_.x -= 1, 0, 79); //a W
+        {
+            if (!oob)
+               object.position_.x = std::clamp( object.position_.x -= 1, 0, 79); //a W
+        }
         else
         {
             object.position_.x -= 1;
@@ -49,7 +63,10 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         break;
     case SOUTH:
         if (!allow_oob)
-            object.position_.y = std::clamp( object.position_.y += 1, 0, 23); //s S
+        {
+            if (!oob)
+                object.position_.y = std::clamp( object.position_.y += 1, 0, 23 - y_offset); //s S
+        }
         else
         {
             object.position_.y += 1;
@@ -57,7 +74,10 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         break;
     case EAST:
         if (!allow_oob)
-            object.position_.x = std::clamp( object.position_.x += 1, 0, 79); //d E
+        {
+            if (!oob)
+                object.position_.x = std::clamp( object.position_.x += 1, 0, 79 - x_offset); //d E
+        }
         else
         {
             object.position_.x += 1;

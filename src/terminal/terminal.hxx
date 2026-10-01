@@ -164,6 +164,21 @@ bool is_in_screenspace(const coordinate& c)
     return (c.x >= 0) && (c.y >= 0) && (c.x <= 79) && (c.y <= 23);
 }
 
+void render_sprite(terminal_screen::render_buffers& rb, const render_info& ri, coordinate sub_tile)
+{
+    coordinate chunk = ri.bb.top_left;
+    chunk += sub_tile;
+    if (is_in_screenspace(chunk))
+    {
+        auto symbol = ri.model[sub_tile.y * ri.bb.dimensions.x + sub_tile.x];
+        if (symbol != ri.transparency && rb.depth[chunk.y][chunk.x] < ri.z_order)
+        {
+            rb.surface[chunk.y][chunk.x] = symbol;
+            rb.depth[chunk.y][chunk.x] = ri.z_order;
+        }
+    }
+}
+
 void render_object(terminal_screen::render_buffers& rb, i_drawable* object)
 {
     render_info ri = object->get_render_info();
@@ -172,17 +187,7 @@ void render_object(terminal_screen::render_buffers& rb, i_drawable* object)
     {
         for (auto i = 0; i < ri.bb.dimensions.x; ++i)
         {
-            coordinate chunk = ri.bb.top_left;
-            chunk += {i, j};
-            if (is_in_screenspace(chunk))
-            {
-                auto symbol = ri.model[j * ri.bb.dimensions.x + i];
-                if (symbol != ri.transparency && rb.depth[chunk.y][chunk.x] < ri.z_order)
-                {
-                    rb.surface[chunk.y][chunk.x] = symbol;
-                    rb.depth[chunk.y][chunk.x] = ri.z_order;
-                }
-            }
+            render_sprite(rb, ri, {i, j});
         }
     }
 }
@@ -194,12 +199,9 @@ void render_autoscroll::draw_world(game_world& gw)
 
     std::lock_guard<std::mutex> world_guard(world_mutex);
     
-    for (auto* obj : gw.everything)
+    for (auto* obj : gw.drawables)
     {   
-        if (auto* drawable = dynamic_cast<i_drawable*>(obj))
-        {
-            render_object(buf, drawable);
-        }
+        render_object(buf, obj);
     }
 
     std::cout << "\033[H";

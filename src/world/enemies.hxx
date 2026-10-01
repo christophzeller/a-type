@@ -88,6 +88,11 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider
 
         return bb;  // TODO: member & update on move?
     }
+
+    extents get_extents() const
+    {
+        return ::get_extents(get_bounding_box());
+    }
     
     void on_collision(i_collider* other) override 
     {

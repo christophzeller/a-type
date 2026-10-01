@@ -33,7 +33,7 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
 
     void update(system_clock::duration delta_t) override
     {
-        enemy::update(delta_t); // TODO: not working. why
+        enemy::update(delta_t);
         navigate(*this, waypoints[current_waypoint]);
 
         if (position_ == waypoints[current_waypoint])
