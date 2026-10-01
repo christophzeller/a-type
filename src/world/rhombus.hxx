@@ -19,7 +19,10 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
 
     	current_waypoint = 0;
         waypoints.push_back( coordinate { -5, 15} );
-                        
+
+    	guns.clear();
+    	guns.push_back({-4, 0});
+    	guns.push_back({-4, 1});
     } //world_object('<', position, [](){}) {}
 
     render_info get_render_info() override 

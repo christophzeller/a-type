@@ -132,6 +132,22 @@ struct i_collider
     virtual void on_collision(i_collider* other) = 0;
 };
 
+using hardpoints = std::vector<coordinate>;
+
+// struct attack info: location, hardpoints, homing, dumbfire, direction, ...
+struct attack_info
+{
+    direction dir;
+    coordinate position;
+};
+
+struct i_attacker
+{
+    virtual bool attack() = 0;
+    virtual attack_info get_attack_info() const = 0;
+    virtual const hardpoints& get_hardpoints() const = 0;
+};
+
 bool is_collision(const i_collider& a, const i_collider& b)
 {
     if (&a == &b)

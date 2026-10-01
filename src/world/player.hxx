@@ -10,9 +10,13 @@
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
 
-struct player : public world_object, i_movable, i_drawable, i_collider
+struct player : public world_object, i_movable, i_drawable, i_collider, i_attacker
 {
-    player(coordinate position) : world_object('>', position, [](){}) {}
+    player(coordinate position) : world_object('>', position, [](){}) 
+    {
+        guns.push_back( coordinate{4, 0} );
+        guns.push_back( coordinate{4, 2} );
+    }
 
     // i_drawable
     render_info get_render_info() override 
@@ -95,7 +99,7 @@ struct player : public world_object, i_movable, i_drawable, i_collider
         '|','/','-' 
         };
 
-    bool attack()
+    bool attack() override
     {
         if (attack_intent)
         {
@@ -105,10 +109,21 @@ struct player : public world_object, i_movable, i_drawable, i_collider
         return attack_intent;
     }
 
+    attack_info get_attack_info() const override
+    {
+        return attack_info { EAST, coordinate{position_} };
+    }
+
+    const hardpoints& get_hardpoints() const override
+    {
+        return guns;
+    }
+
     std::atomic<bool> attack_intent { false };
 
     std::vector<std::unique_ptr<projectile>> pewpew;
 
+    hardpoints guns { };
     coordinate model_dimensions { 3, 3 };
     system_clock::duration move_timer { 50ms };
     system_clock::duration speed { 50ms };

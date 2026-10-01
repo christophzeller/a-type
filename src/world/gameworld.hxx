@@ -29,6 +29,9 @@ struct game_world
 
         if (auto* mv = dynamic_cast<i_movable*>(wo))
             movables.push_back(mv);
+
+        if (auto* atk = dynamic_cast<i_attacker*>(wo))
+            attackers.push_back(atk);
     }
 
     void remove_object(world_object* wo)
@@ -44,6 +47,11 @@ struct game_world
         if (auto* mv = dynamic_cast<i_movable*>(wo))
         {
             movables.erase(std::find(movables.begin(), movables.end(), mv));
+        }
+
+        if (auto* atk = dynamic_cast<i_attacker*>(wo))
+        {
+            attackers.erase(std::find(attackers.begin(), attackers.end(), atk));
         }
     }
 
@@ -64,32 +72,21 @@ struct game_world
     void process_attacks()
     {
         std::lock_guard<std::mutex> dog(dynob_mutex);
-        if (the_player->attack())
-        {
-            auto spawn = coordinate {the_player->position_};
-            spawn += coordinate{4, 0};
 
-            dynamic_spawns.push_back(
-                std::make_unique<projectile>(
-                    spawn
-                )
-            );
-            add_object(dynamic_spawns.back().get());
-        }
-
-        for (auto& o : dynamic_spawns)
+        for (auto* atk : attackers)
         {
-            if (auto* nmy = dynamic_cast<enemy*>( o.get() ) ) 
+            if (atk->attack())
             {
-                if (nmy->attack())
+                auto ai = atk->get_attack_info();
+                for (const auto& hp : atk->get_hardpoints())
                 {
-                    auto spawn = coordinate {o->position_};
-                    spawn += coordinate{-5, 0};
+                    auto spawn = ai.position;
+                    spawn += hp;
 
                     dynamic_spawns.push_back(
                         std::make_unique<projectile>(
                             spawn,
-                            WEST
+                            ai.dir
                         )
                     );
                     add_object(dynamic_spawns.back().get());
@@ -224,6 +221,7 @@ struct game_world
     std::vector<world_object*> everything {};
     std::vector<i_drawable*> drawables {};
     std::vector<i_movable*> movables {};
+    std::vector<i_attacker*> attackers {};
     player* the_player { nullptr };
 
     std::size_t progress { 0 };

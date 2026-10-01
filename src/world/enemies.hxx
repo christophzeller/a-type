@@ -22,7 +22,7 @@ using namespace std::literals::chrono_literals;
 // hold position relative to two objects (block)
 // 
 
-struct enemy : public world_object, i_movable, i_drawable, i_collider
+struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacker
 {
     enemy(coordinate position) : world_object('?', position, [](){} ) 
     {
@@ -98,7 +98,7 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider
     {
     }
 
-    virtual bool attack()
+    bool attack() override
     {
         if (attack_intent)
         {
@@ -111,6 +111,16 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider
         }
     }
 
+    attack_info get_attack_info() const override
+    {
+        return attack_info { WEST, coordinate{position_} };
+    }
+
+    const hardpoints& get_hardpoints() const override
+    {
+        return guns;
+    }
+
     system_clock::duration attack_timer { 1s };
     system_clock::duration attack_frequency { 3s };
 
@@ -119,6 +129,8 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider
     direction move_intent { STATIC };
 
     bool attack_intent { false };
+    hardpoints guns { {-4, 0} };
+        
     std::vector<coordinate> waypoints;
     std::size_t current_waypoint;
 
@@ -138,6 +150,8 @@ struct torus : public enemy // world_object, i_movable, i_drawable
 	        };
 
     	model_dimensions = { 4, 3 };
+    	guns.clear();
+    	guns.push_back({-4, 1});
     }
     
     render_info get_render_info() override 
@@ -173,6 +187,10 @@ struct diamond : public enemy//, world_object, i_movable, i_drawable
 	        '-', '\\', '/', 'X'
 	        };
         model_dimensions = { 4, 4 };
+
+        guns.clear();
+        guns.push_back({-4, 0});
+        guns.push_back({-4, 3});
     }
 
     render_info get_render_info() override 
