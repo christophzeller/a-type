@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../world/objects.hxx"
+#include "../objects.hxx"
 
 #include <cstdlib>
 #include <iostream>

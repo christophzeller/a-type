@@ -3,12 +3,15 @@ project (a-type)
 add_executable(a-type 
 		src/main.cxx
 
-		src/ai/ai.hxx
+		src/engine/ai/ai.hxx
+		src/engine/input/input.hxx
+		src/engine/terminal/terminal.hxx	
+		src/engine/objects.hxx
+		src/engine/utilities.hxx
+		src/engine/engine.hxx
+		src/engine/engine_state.hxx
 
-		src/input/input.hxx
-
-		src/terminal/terminal.hxx
-
+		src/game/game_world.hxx
 		src/game/player.hxx
 		src/game/projectile.hxx
 		src/game/starfield.hxx
@@ -18,11 +21,9 @@ add_executable(a-type
 		src/game/enemies/torus.hxx
 		src/game/enemies/diamond.hxx
 
-		src/world/objects.hxx
-		src/world/utilities.hxx
-		src/world/engine.hxx
-		src/world/engine_state.hxx
-		src/world/game_world.hxx
-
-
 	)
+
+target_include_directories(a-type
+    PUBLIC
+    src
+    )

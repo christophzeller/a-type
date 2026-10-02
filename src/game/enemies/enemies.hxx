@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../ai/ai.hxx"
-#include "../../world/objects.hxx"
-#include "../../world/utilities.hxx"
+#include "engine/ai/ai.hxx"
+#include "engine/objects.hxx"
+#include "engine/utilities.hxx"
 
 #include <chrono>
 #include <vector>

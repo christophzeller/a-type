@@ -1,7 +1,7 @@
 #pragma once
 
 #include "enemies.hxx"
-#include "../../ai/ai.hxx"
+#include "engine/ai/ai.hxx"
 
 struct diamond : public enemy//, world_object, i_movable, i_drawable
 {

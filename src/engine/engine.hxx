@@ -1,9 +1,9 @@
 #pragma once
 
 #include "engine_state.hxx"
-#include "../input/input.hxx"
-#include "../terminal/terminal.hxx"
-#include "game_world.hxx"
+#include "input/input.hxx"
+#include "terminal/terminal.hxx"
+#include "../game/game_world.hxx"
 #include "objects.hxx"
 
 #include <algorithm>

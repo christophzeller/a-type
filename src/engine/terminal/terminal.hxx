@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../world/objects.hxx"
-#include "../world/game_world.hxx"
-#include "../world/engine_state.hxx"
+#include "../objects.hxx"
+#include "../../game/game_world.hxx"
+#include "../engine_state.hxx"
 
 #include <chrono>
 #include <cstddef>

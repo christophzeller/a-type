@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../world/objects.hxx"
+#include "engine/objects.hxx"
 
 #include <chrono>
 #include <vector>

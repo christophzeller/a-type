@@ -1,17 +1,17 @@
 #pragma once
 
 
-#include "objects.hxx"
-#include "utilities.hxx"
+#include <engine/objects.hxx>
+#include "engine/utilities.hxx"
 
-#include "../game/enemies/enemies.hxx"
-#include "../game/enemies/rhombus.hxx"
-#include "../game/enemies/torus.hxx"
-#include "../game/enemies/diamond.hxx"
+#include "enemies/enemies.hxx"
+#include "enemies/rhombus.hxx"
+#include "enemies/torus.hxx"
+#include "enemies/diamond.hxx"
 
-#include "../game/player.hxx"
-#include "../game/projectile.hxx"
-#include "../game/starfield.hxx"
+#include "player.hxx"
+#include "projectile.hxx"
+#include "starfield.hxx"
 
 #include <algorithm>
 #include <chrono>
