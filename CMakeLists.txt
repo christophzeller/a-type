@@ -1,6 +1,7 @@
+cmake_minimum_required(VERSION 3.28)
 project (a-type)
 
-add_executable(a-type 
+set(a-type-sources 
 		src/main.cxx
 
 		src/engine/ai/ai.hxx
@@ -20,10 +21,44 @@ add_executable(a-type
 		src/game/enemies/rhombus.hxx
 		src/game/enemies/torus.hxx
 		src/game/enemies/diamond.hxx
+    )
 
+# vanilla
+
+add_executable(a-type 
+        ${a-type-sources}
 	)
 
 target_include_directories(a-type
     PUBLIC
     src
     )
+
+
+# address & undefined behavior sanitizers
+
+add_executable(a-type_ASanUBSan
+        ${a-type-sources}
+    )
+
+target_include_directories(a-type_ASanUBSan
+    PUBLIC
+    src
+    )
+
+target_compile_options(a-type_ASanUBSan PRIVATE -fsanitize=address,undefined)
+target_link_options(a-type_ASanUBSan PRIVATE -fsanitize=address,undefined)
+
+# thread sanitizer
+
+add_executable(a-type_TSan
+     ${a-type-sources}
+    )
+
+target_include_directories(a-type_TSan
+    PUBLIC
+    src
+    )
+
+target_compile_options(a-type_TSan PRIVATE -fsanitize=thread)
+target_link_options(a-type_TSan PRIVATE -fsanitize=thread)
