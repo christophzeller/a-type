@@ -232,6 +232,10 @@ struct game_world
                     );
                     the_player = dynamic_cast<player*>(dynamic_spawns.back().get());
                 }
+                else
+                {
+                    return;
+                }
             break;
         }   
         add_object(dynamic_spawns.back().get());

@@ -17,13 +17,13 @@ struct coordinate
 {
     coordinate() = default;
     coordinate(int x_, int y_) : x(x_), y(y_) {}
-    virtual ~coordinate() = default;
+    ~coordinate() = default;
     coordinate(const coordinate&) = default;
     coordinate(coordinate&&) = default;
     coordinate& operator=(coordinate&) = default;
     coordinate& operator=(coordinate&&) = default;
 
-    bool operator==(const coordinate& other)
+    bool operator==(const coordinate& other) const
     {
         if (other.x == x && other.y == y)
             return true;
