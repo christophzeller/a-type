@@ -97,6 +97,7 @@ struct render_info
     std::vector<char> model; // copy
     char transparency { '&' };
     std::size_t z_order { 1 };
+    bool is_background { false };
 };
 
 struct i_drawable

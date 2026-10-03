@@ -168,8 +168,14 @@ void render_sprite(terminal_screen::render_buffers& rb, const render_info& ri, c
 {
     coordinate chunk = ri.bb.top_left; // - camera.position -> 
     chunk += sub_tile;
-    chunk.x -= camera.x;
-    chunk.y -= camera.y;
+
+    // background objects are supposed to be in screenspace, always
+    if (!ri.is_background)
+    {   
+        chunk.x -= camera.x;
+        chunk.y -= camera.y;
+    }
+    
     if (is_in_screenspace(chunk, rb.res))
     {
         auto symbol = ri.model[sub_tile.y * ri.bb.dimensions.x + sub_tile.x];

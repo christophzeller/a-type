@@ -52,11 +52,17 @@ struct star : public world_object, i_drawable, i_movable
     render_info get_render_info() override 
     {
         twinkle();
-        
+
         bounding_box bb;
         bb.top_left = position_;
         bb.dimensions = {1, 1};
-        return render_info{ bb, model };
+
+        render_info ri;
+        ri.bb = bb;
+        ri.model = model;
+        ri.is_background = true;
+        
+        return ri;
     }
 
     void set_move_intent(direction dir) override {}
