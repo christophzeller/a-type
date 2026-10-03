@@ -59,11 +59,36 @@ struct render_autoscroll : public i_render_strategy
 struct terminal_screen 
 {
     using buffer = std::vector<std::string>;
-    using depth_info = std::vector<std::vector<std::size_t>>;
+    using depth_info = std::vector<std::vector<std::size_t>>; // TODO: depth_buffer
+
+/*    struct color_info
+    {
+        std::size_t row {0};
+        std::size_t column {0};
+        std::string ansi_color { "0" };
+        char symbol { ' ' };
+    };
+*/
     struct render_buffers
     {
         buffer surface;
         depth_info depth;
+
+        // TODO: note to self. terminal color sketch:
+        // since std::format wants constexpr, and it doesn't look like fmt readily supports:
+        //  string f = // some string with a variable number of {}s
+        //  fmt::format(f, vector<string> my_stuff_for_the_curly_braces
+        //
+        // coloring the terminal is deferred until the time we concatenate all the lines 
+        // for a single << to std::cout.
+        // if color (31) is encountered in render_info for drawable at x=42, y=17:
+        //      create color_info-struct { 17, 42, 31, symbol } and add it to a vector<color_info>
+        //      the vector contains information for all the tiles that need coloring
+        // for each element in that vector<color_info>:
+        //      insert {}s at row/column
+        // for each element, again:
+        //      concat string with color escaping for the n-th element
+        //      insert at the next instance of {}
     };
 
     explicit terminal_screen(i_render_strategy& renderer, int fd=0);
@@ -192,8 +217,8 @@ void render_autoscroll::draw_world(game_world& gw)
         render_object(buf, obj);
     }
 
-    std::cout << "\033[H";
-    std::string zipped { ' ' };
+//    std::cout << "\033[H";
+    std::string zipped { "\033[H" };
     zipped.reserve(80*24+24);
 
     for (const auto& line : buf.surface)

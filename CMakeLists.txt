@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.28)
 project (a-type)
 
+find_package(GTest)
+
 set(a-type-sources 
 		src/main.cxx
 
@@ -34,7 +36,6 @@ target_include_directories(a-type
     src
     )
 
-
 # address & undefined behavior sanitizers
 
 add_executable(a-type_ASanUBSan
@@ -62,3 +63,23 @@ target_include_directories(a-type_TSan
 
 target_compile_options(a-type_TSan PRIVATE -fsanitize=thread)
 target_link_options(a-type_TSan PRIVATE -fsanitize=thread)
+
+# gtest
+
+enable_testing()
+
+add_executable(a-type-test
+    test/a-type-test.cxx
+    )
+
+target_include_directories(a-type-test
+    PUBLIC
+    src
+    )
+
+target_link_libraries(a-type-test
+    GTest::gtest_main
+    )
+
+include(GoogleTest)
+gtest_discover_tests(a-type-test)

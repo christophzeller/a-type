@@ -23,6 +23,7 @@ coordinate get_random_coord()
     return {x, y};
 }
 
+// TODO: add ", extents borders)" argument
 bool is_oob(coordinate c)
 {
     if (c.x < 0 || c.x > 79 || c.y < 0 || c.y > 23)
@@ -104,6 +105,7 @@ collision_list get_collisions(const std::vector<world_object*> objects)
     return collisions;
 }
 
+// TODO: add ", extents borders)" argument
 void move_object(world_object& object, direction dir, bool allow_oob=false)
 {
     bool oob { false };
