@@ -8,10 +8,11 @@ set(a-type-sources
 
 		src/engine/ai/ai.hxx
 		src/engine/input/input.hxx
-		src/engine/terminal/terminal.hxx	
+		src/engine/terminal/terminal.hxx
+		src/engine/terminal/types.hxx
 		src/engine/objects.hxx
 		src/engine/utilities.hxx
-		src/engine/engine.hxx
+		src/engine/triebwerk.hxx
 		src/engine/engine_state.hxx
 
 		src/game/game_world.hxx

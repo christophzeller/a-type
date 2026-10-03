@@ -26,7 +26,18 @@ using namespace engine::utilities;
 
 std::mutex world_mutex;
 
-struct game_world
+/*
+struct i_game
+{
+    virtual void on_tick(delta_t, engine_state) = 0;
+    virtual bounding_box get_camera() = 0; // essentially 2d baked MVP-matrix
+    virtual std::vector<i_drawable*>() = 0;
+
+    // something for the key binds
+};
+*/
+
+struct game_world // : public i_game 
 {
     void add_object(world_object* wo)
     {
@@ -74,7 +85,7 @@ struct game_world
     {
         std::lock_guard<std::mutex> world_guard(world_mutex);
         
-        auto collisions = get_collisions(everything);
+        auto collisions = get_collisions(everything, get_extents(world_bb));
         for (const auto& c : collisions)
         {
             for (auto o : c)
@@ -116,7 +127,7 @@ struct game_world
         }
     }
 
-    void spawn_stars(std::size_t layers=1)
+    void spawn_stars(std::size_t layers)
     {
         std::lock_guard<std::mutex> dog(dynob_mutex);
         for (auto layer = 1; layer <= layers; ++layer)
@@ -124,13 +135,19 @@ struct game_world
         	auto step = (layer - 1) ? layer * 4 : 1;
         	if (progress % step == 0)
         	{
-    	    	const auto& star_list = star_loop[(progress / step )% 80];
+    	    	const auto& star_list = star_loop[(progress / step ) % 80];
     	        for (auto sy : star_list)
     	        {
-    	            auto y = (sy + progress % 80) % 23;
+    	            // spawn at right camera view edge
+//    	            auto y = (sy + progress % screen_dimensions.width) % (screen_dimensions.height - 1);
+//    	            (layer % 2 == 0) ? y = 23 - y : y;
     	            dynamic_spawns.push_back(
     	            	std::make_unique<star>(
-    	            		coordinate(79, (layer % 2 == 0) ? 23 - sy : sy)
+    	            		coordinate(
+    	            		    camera_viewport.dimensions.x - 1, 
+    	            		    //sy
+    	            		    (layer % 2 == 0) ? camera_viewport.dimensions.y - 1 - sy : sy
+    	            		    )
     	            		, layer * milliseconds(100))
     	            		);
     	            add_object(dynamic_spawns.back().get());
@@ -149,7 +166,7 @@ struct game_world
                 std::cin.get();
             }
         
-            if ( is_oob( it->get()->position_ ) )
+            if ( is_oob( it->get()->position_, get_extents(world_bb) ) )
             {
                 remove_object(it->get());
                 it = dynamic_spawns.erase(it);
@@ -161,7 +178,7 @@ struct game_world
         }
     }
 
-    void on_tick(std::chrono::system_clock::duration delta_t)
+    void on_tick(std::chrono::system_clock::duration delta_t, engine_state es)
     {
         static auto ctr { 0 };
         {
@@ -176,7 +193,7 @@ struct game_world
             std::lock_guard<std::mutex> wog(world_mutex);
             for (auto* o : movables) 
             {
-                move_object(o, o->get_move_intent(), o->allow_oob()); 
+                move_object(o, o->get_move_intent(), get_extents(world_bb), o->allow_oob()); 
             }
         }
 
@@ -186,7 +203,7 @@ struct game_world
         cleanup();
     }
     
-    void on_scroll(std::chrono::system_clock::duration delta_t)
+    void on_scroll(std::chrono::system_clock::duration delta_t, engine_state es)
     { // TODO: move to on_tick with scroll_timer
         spawn_stars(3); 
         progress += 1; 
@@ -256,5 +273,17 @@ struct game_world
     std::vector<i_attacker*> attackers {};
     player* the_player { nullptr };
 
+    // size should be identical to terminal screen dimensions
+    bounding_box camera_viewport
+     {
+        coordinate {0, 0},
+        coordinate {80, 24}
+     };
+
+    bounding_box world_bb
+    {
+        coordinate {0, 0},
+        coordinate {80, 24}
+    };
     std::size_t progress { 0 };
 };

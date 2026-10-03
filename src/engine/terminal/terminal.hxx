@@ -1,5 +1,6 @@
 #pragma once
 
+#include "engine/terminal/types.hxx"
 #include "engine/objects.hxx"
 #include "game/game_world.hxx"
 #include "engine/engine_state.hxx"
@@ -23,7 +24,6 @@ using namespace engine::utilities;
 
 struct terminal
 {
-
     terminal()
     {
         tty_fd = open("/dev/tty", O_RDWR);
@@ -40,8 +40,8 @@ struct terminal
 
 struct i_render_strategy
 {
-    virtual void draw_world(game_world& gw) = 0;
-    virtual void draw_ui(engine_state es, game_world& gw) = 0;
+    virtual void draw_world(game_world& gw, resolution screen_dimensions) = 0;
+    virtual void draw_ui(engine_state es, game_world& gw, resolution screen_dimensions) = 0;
 };
 
 /*struct render_static : public i_render_strategy
@@ -52,10 +52,9 @@ struct i_render_strategy
 
 struct render_autoscroll : public i_render_strategy
 {
-    void draw_world(game_world& gw) override;
-    void draw_ui(engine_state es, game_world& gw) override;
+    void draw_world(game_world& gw, resolution screen_dimensions) override;
+    void draw_ui(engine_state es, game_world& gw, resolution screen_dimensions) override;
 };
-
 
 struct terminal_screen 
 {
@@ -72,6 +71,7 @@ struct terminal_screen
 */
     struct render_buffers
     {
+        resolution res;
         buffer surface;
         depth_info depth;
 
@@ -92,47 +92,32 @@ struct terminal_screen
         //      insert at the next instance of {}
     };
 
-    explicit terminal_screen(i_render_strategy& renderer, int fd=0);
+    explicit terminal_screen(i_render_strategy& renderer, resolution screen_size, int fd=0);
     virtual ~terminal_screen();
 
     void draw(engine_state es, game_world& gw) 
     {
         auto t0 = system_clock::now();
-        renderer_.draw_world(gw); 
+        renderer_.draw_world(gw, screen_dimensions); 
         auto t1 = system_clock::now();
-        renderer_.draw_ui(es, gw); 
+        renderer_.draw_ui(es, gw, screen_dimensions); 
     };
 
     inline int fd() { return tty_fd; }
 
-private:
-    terminal_screen::buffer get_renderbuffer();
     i_render_strategy& renderer_;
 
     system_clock::duration render_time;
 
-    struct termios original_terminal_settings;
+    resolution screen_dimensions;
+    termios original_terminal_settings;
 
     int tty_fd { -1 };
-    std::size_t width  { 80 };
-    std::size_t height { 24 };
-    
 };
 
-terminal_screen::buffer terminal_screen::get_renderbuffer()
-{
-    buffer tmp;
-
-    for (auto i = 0; i < height; ++i)
-    {
-        tmp.push_back(std::string(width, ' '));
-    }
-
-    return tmp;
-}
-
-terminal_screen::terminal_screen(i_render_strategy& renderer, int fd)
+terminal_screen::terminal_screen(i_render_strategy& renderer, resolution screen_size, int fd)
  : renderer_(renderer)
+ , screen_dimensions(screen_size)
  , tty_fd(fd)
 {
     std::cout << __PRETTY_FUNCTION__ << "\n";
@@ -169,21 +154,23 @@ terminal_screen::render_buffers get_renderbuffers(std::size_t width = 80, std::s
         tmp.surface.push_back(std::string(width, ' '));
         tmp.depth.push_back( std::vector<std::size_t>(width, 0)  );
     }
+    tmp.res = resolution { width, height };
 
     return tmp;
 }
 
-
-bool is_in_screenspace(const coordinate& c)
+bool is_in_screenspace(const coordinate& c, resolution screen_dimensions)
 {
-    return (c.x >= 0) && (c.y >= 0) && (c.x <= 79) && (c.y <= 23);
+    return (c.x >= 0) && (c.y >= 0) && (c.x <= screen_dimensions.width - 1) && (c.y <= screen_dimensions.height - 1);
 }
 
-void render_sprite(terminal_screen::render_buffers& rb, const render_info& ri, coordinate sub_tile)
+void render_sprite(terminal_screen::render_buffers& rb, const render_info& ri, coordinate sub_tile, coordinate camera)
 {
-    coordinate chunk = ri.bb.top_left;
+    coordinate chunk = ri.bb.top_left; // - camera.position -> 
     chunk += sub_tile;
-    if (is_in_screenspace(chunk))
+    chunk.x -= camera.x;
+    chunk.y -= camera.y;
+    if (is_in_screenspace(chunk, rb.res))
     {
         auto symbol = ri.model[sub_tile.y * ri.bb.dimensions.x + sub_tile.x];
         if (symbol != ri.transparency && rb.depth[chunk.y][chunk.x] < ri.z_order)
@@ -194,33 +181,36 @@ void render_sprite(terminal_screen::render_buffers& rb, const render_info& ri, c
     }
 }
 
-void render_object(terminal_screen::render_buffers& rb, i_drawable* object)
+void render_object(terminal_screen::render_buffers& rb, render_info ri, coordinate camera)
 {
-    render_info ri = object->get_render_info();
-    
     for (auto j = 0; j < ri.bb.dimensions.y; ++j)
     {
         for (auto i = 0; i < ri.bb.dimensions.x; ++i)
         {
-            render_sprite(rb, ri, {i, j});
+            render_sprite(rb, ri, {i, j}, camera);
         }
     }
 }
 
-void render_autoscroll::draw_world(game_world& gw)
+// TODO: render objects based on presence in screenspace: needs information about current world offset
+// TODO: game_world& -> std::vector<drawables>
+void render_autoscroll::draw_world(game_world& gw, resolution screen_dimensions)
 {
-    auto buf = get_renderbuffers();
+    auto buf = get_renderbuffers(screen_dimensions.width, screen_dimensions.height);
 
     std::lock_guard<std::mutex> world_guard(world_mutex);
     
     for (auto* obj : gw.drawables)
     {   
-        render_object(buf, obj);
+        render_info ri = obj->get_render_info();
+        if (is_oob(ri.bb.top_left, get_extents(gw.camera_viewport)))
+            continue; // not in view
+
+        render_object(buf, ri, gw.camera_viewport.top_left);
     }
 
-//    std::cout << "\033[H";
     std::string zipped { "\033[H" };
-    zipped.reserve(80*24+24);
+    zipped.reserve(screen_dimensions.width * screen_dimensions.height + screen_dimensions.height);
 
     for (const auto& line : buf.surface)
     {
@@ -231,9 +221,9 @@ void render_autoscroll::draw_world(game_world& gw)
 
 }
 
-void render_autoscroll::draw_ui(engine_state es, game_world& gw)
+void render_autoscroll::draw_ui(engine_state es, game_world& gw, resolution screen_dimensions)
 {
-    auto width = 80;
+    auto width = screen_dimensions.width;
     std::string mt { "" };
     std::string paused { "PAUSED" };
     std::string instructions { "WASD to move, SPACEBAR to stop moving, P to pause/unpause, Q to quit" };

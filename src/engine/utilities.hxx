@@ -28,10 +28,9 @@ coordinate get_random_coord()
     return {x, y};
 }
 
-// TODO: add ", extents borders)" argument
-bool is_oob(coordinate c)
+bool is_oob(coordinate c, extents borders)
 {
-    if (c.x < 0 || c.x > 79 || c.y < 0 || c.y > 23)
+    if (c.x < borders.minima.x || c.x > borders.maxima.x || c.y < borders.minima.y || c.y > borders.maxima.y )
         return true;
 
     return false;
@@ -72,7 +71,7 @@ bool is_collision(world_object* a, world_object* b)
 using collision = std::set<world_object*>;
 using collision_list = std::set<collision>;
 
-collision_list get_collisions(const std::vector<world_object*> objects) 
+collision_list get_collisions(const std::vector<world_object*> objects, extents borders) 
 {
     collision_list collisions {};
 
@@ -89,10 +88,10 @@ collision_list get_collisions(const std::vector<world_object*> objects)
             if (!dynamic_cast<i_collider*>(rhs))
                 continue;
 
-            if (is_oob(rhs->position_))
+            if (is_oob(rhs->position_, borders))
                 continue;
 
-            if (is_oob(lhs->position_))
+            if (is_oob(lhs->position_, borders))
                 continue;
 
             if (is_collision(lhs, rhs))
@@ -111,11 +110,11 @@ collision_list get_collisions(const std::vector<world_object*> objects)
 }
 
 // TODO: add ", extents borders)" argument
-void move_object(world_object& object, direction dir, bool allow_oob=false)
+void move_object(world_object& object, direction dir, extents borders, bool allow_oob=false)
 {
     bool oob { false };
     auto ext = object.get_extents();
-    if (is_oob(ext.minima) || is_oob(ext.maxima))
+    if (is_oob(ext.minima, borders) || is_oob(ext.maxima, borders))
         oob = true;
 
     auto x_offset = ext.maxima.x - ext.minima.x;
@@ -127,7 +126,7 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         if (!allow_oob)
         {
             if (!oob)
-                object.position_.y = std::clamp( object.position_.y -= 1, 0, 23 ); //w N
+                object.position_.y = std::clamp( object.position_.y -= 1, borders.minima.y, borders.maxima.y ); //w N
         }
         else
         {
@@ -138,7 +137,7 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         if (!allow_oob)
         {
             if (!oob)
-               object.position_.x = std::clamp( object.position_.x -= 1, 0, 79); //a W
+               object.position_.x = std::clamp( object.position_.x -= 1, borders.minima.x, borders.maxima.x); //a W
         }
         else
         {
@@ -149,7 +148,7 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         if (!allow_oob)
         {
             if (!oob)
-                object.position_.y = std::clamp( object.position_.y += 1, 0, 23 - y_offset); //s S
+                object.position_.y = std::clamp( object.position_.y += 1, borders.minima.y, borders.maxima.y - y_offset); //s S
         }
         else
         {
@@ -160,7 +159,7 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
         if (!allow_oob)
         {
             if (!oob)
-                object.position_.x = std::clamp( object.position_.x += 1, 0, 79 - x_offset); //d E
+                object.position_.x = std::clamp( object.position_.x += 1, borders.minima.x, borders.maxima.x - x_offset); //d E
         }
         else
         {
@@ -170,10 +169,10 @@ void move_object(world_object& object, direction dir, bool allow_oob=false)
     }
 }
 
-void move_object(i_movable* movable, direction dir, bool allow_oob=false)
+void move_object(i_movable* movable, direction dir, extents borders, bool allow_oob=false)
 {
     if (movable->move())
-        move_object(*dynamic_cast<world_object*>(movable), dir, allow_oob);
+        move_object(*dynamic_cast<world_object*>(movable), dir, borders, allow_oob);
 }
 
 } // engine::utilities

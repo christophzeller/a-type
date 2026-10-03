@@ -36,11 +36,8 @@ struct triebwerk
         
         while (is_running)
         {
-            engine_state es;
-            es.is_paused = is_paused;
-            es.is_running = is_running;
             next_frame = system_clock::now() + frame_time;
-            screen->draw(es, gw);
+            screen->draw(get_current_state(), gw);
         }
     }
 
@@ -69,17 +66,18 @@ struct triebwerk
 	void tick()
 	{
 		++current_tick;
+		auto es = get_current_state();
 		
 		last_tick = now;
 		now = system_clock::now();
 
 		delta_t = now - last_tick;
 
-		gw.on_tick(delta_t);
+		gw.on_tick(delta_t, es);
 		if (now >= next_tick)
 		{
 			next_tick = now + scroll_rate;
-			gw.on_scroll(delta_t);
+			gw.on_scroll(delta_t, es);
 		}
 	}
 
@@ -92,6 +90,16 @@ struct triebwerk
         logic_thread.join();
 	}
 
+	engine_state get_current_state()
+	{
+        engine_state es;
+        es.is_paused = is_paused;
+        es.is_running = is_running;
+        es.screen_dimensions = screen->screen_dimensions;
+
+        return es;
+	}
+
     triebwerk() : gw()
     {
         term = std::make_unique<terminal>();
@@ -99,7 +107,7 @@ struct triebwerk
 
         renderer = std::make_unique<render_autoscroll>();
 
-        screen = std::make_unique<terminal_screen>(*renderer, fd);
+        screen = std::make_unique<terminal_screen>(*renderer, resolution {80, 24}, fd);
         
         input = std::make_unique<input_listener>(fd);
 
