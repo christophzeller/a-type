@@ -21,6 +21,9 @@
 
 #include <cstddef>
 
+using namespace engine;
+using namespace engine::utilities;
+
 std::mutex world_mutex;
 
 struct game_world

@@ -8,6 +8,9 @@
 
 using namespace std::chrono;
 
+namespace engine
+{
+
 enum direction
 {
     NORTH, EAST, SOUTH, WEST, STATIC
@@ -123,3 +126,4 @@ struct i_attacker
     virtual const hardpoints& get_hardpoints() const = 0;
 };
 
+} // engine::

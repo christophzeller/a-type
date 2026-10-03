@@ -6,6 +6,11 @@
 #include <set>
 #include <vector>
 
+namespace engine::utilities
+{
+
+using namespace engine;
+
 extents get_extents(const bounding_box bb)
 {
     return (extents {
@@ -170,3 +175,5 @@ void move_object(i_movable* movable, direction dir, bool allow_oob=false)
     if (movable->move())
         move_object(*dynamic_cast<world_object*>(movable), dir, allow_oob);
 }
+
+} // engine::utilities

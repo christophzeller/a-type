@@ -7,6 +7,8 @@
 
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
+using namespace engine::utilities;
+
 
 struct player : public world_object, i_movable, i_drawable, i_collider, i_attacker
 {
@@ -74,7 +76,7 @@ struct player : public world_object, i_movable, i_drawable, i_collider, i_attack
 
     extents get_extents() const
     {
-        return ::get_extents(get_bounding_box());
+        return engine::utilities::get_extents(get_bounding_box());
     }
 
     // i_collider

@@ -9,6 +9,9 @@
 
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
+using namespace engine;
+using namespace engine::ai;
+using namespace engine::utilities;
 
 // TODO: 
 // AI movement: navigate to a set of waypoints. possible presets:
@@ -92,7 +95,7 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacke
 
     extents get_extents() const
     {
-        return ::get_extents(get_bounding_box());
+        return engine::utilities::get_extents(get_bounding_box());
     }
     
     void on_collision(i_collider* other) override 

@@ -9,6 +9,7 @@
 
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
+using namespace engine::utilities;
 
 struct star : public world_object, i_drawable, i_movable
 {
@@ -81,7 +82,7 @@ struct star : public world_object, i_drawable, i_movable
         bb.top_left = coordinate {position_};
         bb.dimensions = {1, 1};
         
-        return ::get_extents(bb);
+        return engine::utilities::get_extents(bb);
     }
 
     std::vector<char> model { '.' };

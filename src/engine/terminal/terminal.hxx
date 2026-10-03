@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../objects.hxx"
-#include "../../game/game_world.hxx"
-#include "../engine_state.hxx"
+#include "engine/objects.hxx"
+#include "game/game_world.hxx"
+#include "engine/engine_state.hxx"
 
 #include <chrono>
 #include <cstddef>
@@ -19,6 +19,7 @@
 
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
+using namespace engine::utilities;
 
 struct terminal
 {

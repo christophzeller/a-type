@@ -3,6 +3,8 @@
 #include "engine/objects.hxx"
 #include "engine/utilities.hxx"
 
+using namespace engine::utilities;
+
 TEST(ATypeTest, Dummy)
 {
     EXPECT_EQ(7*6, 42);

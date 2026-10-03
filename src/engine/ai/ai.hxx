@@ -1,12 +1,16 @@
 #pragma once
 
-#include "../objects.hxx"
+#include "engine/objects.hxx"
 
 #include <cstdlib>
 #include <iostream>
 
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
+using namespace engine;
+
+namespace engine::ai
+{
 
 direction get_direct_path(const coordinate& from, const coordinate& to)
 {
@@ -95,3 +99,5 @@ void erratic(i_movable& obj, bool allow_x=true, bool allow_y=true)
     break;
     }
 }
+
+} // engine::ai

@@ -3,7 +3,7 @@
 #include "engine_state.hxx"
 #include "input/input.hxx"
 #include "terminal/terminal.hxx"
-#include "../game/game_world.hxx"
+#include "game/game_world.hxx"
 #include "objects.hxx"
 
 #include <algorithm>
@@ -20,7 +20,10 @@
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
 
-struct engine
+namespace engine
+{
+
+struct triebwerk
 {
     void render_loop()
     {
@@ -82,14 +85,14 @@ struct engine
 
 	void run()
 	{
-        std::thread render_thread { &engine::render_loop, this };
-        std::thread logic_thread { &engine::logic_loop, this };
+        std::thread render_thread { &triebwerk::render_loop, this };
+        std::thread logic_thread { &triebwerk::logic_loop, this };
 
         render_thread.join();
         logic_thread.join();
 	}
 
-    engine() : gw()
+    triebwerk() : gw()
     {
         term = std::make_unique<terminal>();
         auto fd = term->tty_fd;
@@ -171,3 +174,5 @@ struct engine
     system_clock::duration delta_t;
     std::size_t current_tick { 0 };
 };
+
+} // engine::

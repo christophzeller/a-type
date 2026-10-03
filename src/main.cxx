@@ -1,4 +1,4 @@
-#include "engine/engine.hxx"
+#include "engine/triebwerk.hxx"
 
 #include <atomic>
 #include <chrono>
@@ -17,10 +17,11 @@
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
 
+
 int main()
 {
     std::srand(std::time({}));
-    engine the_game {};
+    engine::triebwerk the_game {};
 
     the_game.run();
     
