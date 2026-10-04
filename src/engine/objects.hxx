@@ -23,7 +23,7 @@ struct coordinate
     ~coordinate() = default;
     coordinate(const coordinate&) = default;
     coordinate(coordinate&&) = default;
-    coordinate& operator=(coordinate&) = default;
+    coordinate& operator=(const coordinate&) = default;
     coordinate& operator=(coordinate&&) = default;
 
     bool operator==(const coordinate& other) const

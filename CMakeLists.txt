@@ -19,6 +19,7 @@ set(a-type-sources
 		src/game/player.hxx
 		src/game/projectile.hxx
 		src/game/starfield.hxx
+		src/game/level.hxx
 
 		src/game/enemies/enemies.hxx
 		src/game/enemies/rhombus.hxx
@@ -36,6 +37,8 @@ target_include_directories(a-type
     PUBLIC
     src
     )
+
+if (WITH_SANITIZERS)
 
 # address & undefined behavior sanitizers
 
@@ -64,6 +67,8 @@ target_include_directories(a-type_TSan
 
 target_compile_options(a-type_TSan PRIVATE -fsanitize=thread)
 target_link_options(a-type_TSan PRIVATE -fsanitize=thread)
+
+endif()
 
 # gtest
 

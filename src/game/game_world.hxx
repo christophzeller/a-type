@@ -4,14 +4,15 @@
 #include "engine/objects.hxx"
 #include "engine/utilities.hxx"
 
-#include "enemies/enemies.hxx"
 #include "enemies/rhombus.hxx"
 #include "enemies/torus.hxx"
 #include "enemies/diamond.hxx"
 
-#include "player.hxx"
-#include "projectile.hxx"
-#include "starfield.hxx"
+#include "game/player.hxx"
+#include "game/projectile.hxx"
+#include "game/starfield.hxx"
+
+#include "game/level.hxx"
 
 #include <algorithm>
 #include <chrono>
@@ -25,17 +26,6 @@ using namespace engine;
 using namespace engine::utilities;
 
 std::mutex world_mutex;
-
-/*
-struct i_game
-{
-    virtual void on_tick(delta_t, engine_state) = 0;
-    virtual bounding_box get_camera() = 0; // essentially 2d baked MVP-matrix
-    virtual std::vector<i_drawable*>() = 0;
-
-    // something for the key binds
-};
-*/
 
 struct game_world // : public i_game 
 {
@@ -156,6 +146,41 @@ struct game_world // : public i_game
         }
     }
 
+    void progress_level()
+    {
+        std::lock_guard<std::mutex> dog(dynob_mutex);
+
+        if (l1.spawns.count(progress) > 0)
+        {
+            for (const auto& si : l1.spawns[progress])
+            {
+                dynamic_spawns.push_back( 
+                    std::make_unique<rhombus>( si.location, si.waypoints )
+                );
+                add_object(dynamic_spawns.back().get());
+            }
+            l1.spawns.erase(progress);
+        }
+    }
+
+    void update_objects(system_clock::duration delta_t)
+    {
+        std::lock_guard<std::mutex> dog(dynob_mutex);
+        for (auto* o : everything) 
+        {
+            o->update(delta_t); 
+        }
+    }
+
+    void move_objects()
+    {
+        std::lock_guard<std::mutex> wog(world_mutex);
+        for (auto* o : movables) 
+        {
+            move_object(o, o->get_move_intent(), get_extents(world_bb), o->allow_oob()); 
+        }
+    }
+
     void cleanup()
     {
         std::lock_guard<std::mutex> dog(dynob_mutex);
@@ -178,37 +203,71 @@ struct game_world // : public i_game
         }
     }
 
+    void check_scroll(system_clock::duration delta_t)
+    {
+        scroll_timer -= delta_t;
+        if (scroll_timer < 0ms)
+        {
+            scroll_timer = scroll_interval;
+            spawn_stars(3);
+
+            ++progress;
+        }
+    }
+
     void on_tick(std::chrono::system_clock::duration delta_t, engine_state es)
     {
         static auto ctr { 0 };
-        {
-            std::lock_guard<std::mutex> dog(dynob_mutex);
-            for (auto* o : everything) 
-            {
-                o->update(delta_t); 
-            }
-        }
 
-        {
-            std::lock_guard<std::mutex> wog(world_mutex);
-            for (auto* o : movables) 
-            {
-                move_object(o, o->get_move_intent(), get_extents(world_bb), o->allow_oob()); 
-            }
-        }
+        check_scroll(delta_t);
+        progress_level();
+
+        update_objects(delta_t);
+        move_objects();
 
         process_collisions(); 
         process_attacks(); 
 
         cleanup();
     }
-    
-    void on_scroll(std::chrono::system_clock::duration delta_t, engine_state es)
-    { // TODO: move to on_tick with scroll_timer
-        spawn_stars(3); 
-        progress += 1; 
-    }
 
+
+    void spawn(std::size_t what, coordinate where, std::vector<coordinate> flight_plan)
+    {
+        std::lock_guard<std::mutex> dog(dynob_mutex);
+
+        switch (what)
+        {
+            case 0:
+                dynamic_spawns.push_back(
+                    std::make_unique<rhombus>(
+                        where,
+                        flight_plan
+                    )
+                );
+            break;
+/*            case 1:
+                dynamic_spawns.push_back(
+                    std::make_unique<torus>(
+                        where,
+                        flight_plan
+                    )
+                );     
+            break;
+            case 2:
+                dynamic_spawns.push_back(
+                    std::make_unique<diamond>(
+                        where,
+                        flight_plan
+                    )
+                );*/
+            break;
+            default:
+                return;
+        }
+        add_object(dynamic_spawns.back().get());
+    }
+    
     void spawn(int type = -1)
     {
         std::lock_guard<std::mutex> dog(dynob_mutex);
@@ -261,6 +320,9 @@ struct game_world // : public i_game
         add_object(dynamic_spawns.back().get());
     }
 
+
+    level1 l1 {};
+
     std::mutex dynob_mutex {};
 
     std::vector<std::unique_ptr<world_object>> dynamic_spawns {};
@@ -272,6 +334,9 @@ struct game_world // : public i_game
     std::vector<i_movable*> movables {};
     std::vector<i_attacker*> attackers {};
     player* the_player { nullptr };
+
+    system_clock::duration scroll_interval = 100ms;
+    system_clock::duration scroll_timer = 100ms;
 
     // size should be identical to terminal screen dimensions
     bounding_box camera_viewport

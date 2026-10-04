@@ -20,6 +20,15 @@
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
 
+struct i_game
+{
+    virtual void on_tick(system_clock::duration delta_t, engine_state) = 0;
+    virtual bounding_box get_camera() = 0; // essentially 2d baked MVP-matrix
+    virtual std::vector<i_drawable*> get_drawables() = 0;
+
+    // something for the key binds
+};
+
 namespace engine
 {
 
@@ -74,11 +83,6 @@ struct triebwerk
 		delta_t = now - last_tick;
 
 		gw.on_tick(delta_t, es);
-		if (now >= next_tick)
-		{
-			next_tick = now + scroll_rate;
-			gw.on_scroll(delta_t, es);
-		}
 	}
 
 	void run()

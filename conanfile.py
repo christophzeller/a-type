@@ -11,9 +11,9 @@ class BasicConanfile(ConanFile):
     # Check the documentation for the rest of the available attributes
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps", "CMakeToolchain"
-    options = { "fsanitize=address,undefined": [True, False] }
+    options = { "sanitizers": [True, False] }
 
-    default_options = { "fsanitize=address,undefined": False }
+    default_options = { "sanitizers": False }
 
 
     # The requirements method allows you to define the dependencies of your recipe
@@ -47,6 +47,8 @@ class BasicConanfile(ConanFile):
         # or any of the build helpers provided with Conan in conan.tools
         # self.run("g++ ...")
         cmake = CMake(self)
+        if self.options.sanitizers:
+            cmake.variables["WITH_SANITIZERS"] = True
         cmake.configure()
         cmake.build()
         

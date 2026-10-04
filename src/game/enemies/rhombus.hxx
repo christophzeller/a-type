@@ -25,6 +25,28 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
     	guns.push_back({-4, 1});
     } //world_object('<', position, [](){}) {}
 
+    rhombus(coordinate position, std::vector<coordinate> wp) 
+     : enemy(position)
+    {
+        model_chars = { 
+        '/', '=', '\\',
+        '\\', '=', '/'
+        };
+	    model_dimensions = { 3, 2 };
+
+    	move_timer = 80ms;
+    	move_speed = 80ms;
+
+    	attack_frequency = 1000ms;
+
+    	current_waypoint = 0;
+        waypoints = wp;
+        
+    	guns.clear();
+    	guns.push_back({-4, 0});
+    	guns.push_back({-4, 1});
+    }
+
     render_info get_render_info() override 
     {
         bounding_box bb;
