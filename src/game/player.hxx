@@ -14,8 +14,8 @@ struct player : public world_object, i_movable, i_drawable, i_collider, i_attack
 {
     player(coordinate position) : world_object('>', position, [](){}) 
     {
-        guns.push_back( coordinate{4, 0} );
-        guns.push_back( coordinate{4, 2} );
+        guns.push_back( { EAST, coordinate{4, 0} } );
+        guns.push_back( { EAST, coordinate{4, 2} } );
     }
 
     // i_drawable
@@ -109,19 +109,23 @@ struct player : public world_object, i_movable, i_drawable, i_collider, i_attack
         return attack_intent;
     }
 
-    attack_info get_attack_info() const override
+    const attacks get_attacks() const override
     {
-        return attack_info { EAST, coordinate{position_} };
-    }
+        attacks atks;
+        for (const auto& gun : guns)
+        {
+            attack_info atk;
+            atk.spawn = position_ + gun.spawn;
+            atk.dir = gun.dir;
+            atks.push_back( atk );
+        }
 
-    const hardpoints& get_hardpoints() const override
-    {
-        return guns;
+        return atks;
     }
 
     std::atomic<bool> attack_intent { false };
 
-    hardpoints guns { };
+    std::vector<gun> guns { };
     coordinate model_dimensions { 3, 3 };
     system_clock::duration move_timer { 50ms };
     system_clock::duration speed { 50ms };

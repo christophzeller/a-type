@@ -36,11 +36,16 @@ struct coordinate
 
     int x { 0 }; 
     int y { 0 };
-    auto& operator+=(coordinate other)
+    auto& operator+=(const coordinate& other)
     {
         x += other.x;
         y += other.y;
         return *this;
+    }
+
+    auto operator+(const coordinate& other) const
+    {
+        return coordinate{ x + other.x, y + other.y };
     }
 };
 
@@ -111,20 +116,21 @@ struct i_collider
     virtual void on_collision(i_collider* other) = 0;
 };
 
-using hardpoints = std::vector<coordinate>;
-
 // struct attack info: location, hardpoints, homing, dumbfire, direction, ...
 struct attack_info
 {
     direction dir;
-    coordinate position;
+    coordinate spawn;
+    // enum type
 };
+
+using gun = attack_info;
+using attacks = std::vector<attack_info>;
 
 struct i_attacker
 {
     virtual bool attack() = 0;
-    virtual attack_info get_attack_info() const = 0;
-    virtual const hardpoints& get_hardpoints() const = 0;
+    virtual const attacks get_attacks() const = 0;
 };
 
 } // engine::

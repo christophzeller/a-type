@@ -115,14 +115,18 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacke
         }
     }
 
-    attack_info get_attack_info() const override
+    const attacks get_attacks() const override
     {
-        return attack_info { WEST, coordinate{position_} };
-    }
+        attacks atks;
+        for (const auto& gun : guns)
+        {
+            attack_info atk;
+            atk.spawn = position_ + gun.spawn;
+            atk.dir = gun.dir;
+            atks.push_back( atk );
+        }
 
-    const hardpoints& get_hardpoints() const override
-    {
-        return guns;
+        return atks;
     }
 
     system_clock::duration attack_timer { 1s };
@@ -133,7 +137,7 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacke
     direction move_intent { STATIC };
 
     bool attack_intent { false };
-    hardpoints guns { {-4, 0} };
+    std::vector<gun> guns { { WEST, {-4, 0}} };
         
     std::vector<coordinate> waypoints;
     std::size_t current_waypoint;

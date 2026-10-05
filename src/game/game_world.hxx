@@ -86,11 +86,11 @@ struct game_world // : public i_game
     }
 
 
-    void spawn_projectile(coordinate position, attack_info ai)
+    void spawn_projectile(attack_info ai)
     {
         dynamic_spawns.push_back(
             std::make_unique<projectile>(
-                position,
+                ai.spawn,
                 ai.dir
             )
         );
@@ -106,12 +106,9 @@ struct game_world // : public i_game
         {
             if (atk->attack())
             {
-                auto ai = atk->get_attack_info();
-                for (const auto& hp : atk->get_hardpoints())
+                for (const auto& ai : atk->get_attacks())
                 {
-                    auto spawn = ai.position;
-                    spawn += hp;
-                    spawn_projectile(spawn, ai);
+                    spawn_projectile(ai);
                 }
             }
         }

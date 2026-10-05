@@ -19,8 +19,8 @@ struct diamond : public enemy//, world_object, i_movable, i_drawable
         model_dimensions = { 4, 4 };
 
         guns.clear();
-        guns.push_back({-4, 0});
-        guns.push_back({-4, 3});
+        guns.push_back( {EAST, {-4, 0}} );
+        guns.push_back( {EAST, {-4, 3}} );
     }
 
     render_info get_render_info() override 

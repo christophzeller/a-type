@@ -12,7 +12,17 @@ using namespace engine::utilities;
 struct projectile : public world_object, i_movable, i_drawable, i_collider
 {
     // move_speed
-    projectile(coordinate position, direction dir=EAST) : world_object('~', position, [](){}), move_intent(dir) {}
+    projectile(coordinate position, direction dir=EAST) : world_object('~', position, [](){}), move_intent(dir) 
+    {
+        if (dir == EAST || dir == WEST)
+        {
+            model_dimensions = { 3, 1 };
+        }
+        else if (dir == NORTH || dir == SOUTH)
+        {
+            model_dimensions = { 1, 3 };
+        }
+    }
     ~projectile() = default;
 
     // i_drawable

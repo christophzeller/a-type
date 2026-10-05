@@ -16,7 +16,10 @@ struct torus : public enemy // world_object, i_movable, i_drawable
 
     	model_dimensions = { 4, 3 };
     	guns.clear();
-    	guns.push_back({-4, 1});
+    	guns.push_back({ WEST, {-4, 1}} );
+    	guns.push_back({ EAST, { 7, 1}} );
+    	guns.push_back({ NORTH, {1, -4}} );
+    	guns.push_back({ SOUTH, {1, 7}} );
     }
     
     render_info get_render_info() override 
@@ -33,7 +36,6 @@ struct torus : public enemy // world_object, i_movable, i_drawable
         enemy::update(delta_t);
         erratic(*this, false, true);
     }
-    
 };
 
 
