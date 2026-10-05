@@ -4,6 +4,7 @@
 #include "input/input.hxx"
 #include "terminal/terminal.hxx"
 #include "game/game_world.hxx"
+#include "game/level.hxx"
 #include "objects.hxx"
 
 #include <algorithm>
@@ -157,6 +158,12 @@ struct triebwerk
         });
         input->add_callback('*', [this](){
             gw.spawn(42); 
+        });
+        input->add_callback('0', [this](){
+            gw.spawn(42); 
+            gw.progress = 0;
+            gw.level = 1;
+            gw.l1 = level1 {};
         });
 
         gw.dynamic_spawns.reserve(128);

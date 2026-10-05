@@ -1,8 +1,8 @@
+#pragma once
 #include "enemies.hxx"
 
 using namespace std::chrono;
 using namespace std::literals::chrono_literals;
-
 
 struct rhombus : public enemy//, world_object, i_movable, i_drawable
 {
@@ -16,6 +16,7 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
 
     	move_timer = 80ms;
     	move_speed = 80ms;
+    	attack_frequency = 1000ms;
 
     	current_waypoint = 0;
         waypoints.push_back( coordinate { -5, 15} );
@@ -26,25 +27,10 @@ struct rhombus : public enemy//, world_object, i_movable, i_drawable
     } //world_object('<', position, [](){}) {}
 
     rhombus(coordinate position, std::vector<coordinate> wp) 
-     : enemy(position)
+     : rhombus(position)
     {
-        model_chars = { 
-        '/', '=', '\\',
-        '\\', '=', '/'
-        };
-	    model_dimensions = { 3, 2 };
-
-    	move_timer = 80ms;
-    	move_speed = 80ms;
-
-    	attack_frequency = 1000ms;
-
     	current_waypoint = 0;
         waypoints = wp;
-        
-    	guns.clear();
-    	guns.push_back({-4, 0});
-    	guns.push_back({-4, 1});
     }
 
     render_info get_render_info() override 

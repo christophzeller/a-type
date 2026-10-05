@@ -150,6 +150,9 @@ struct game_world // : public i_game
     {
         std::lock_guard<std::mutex> dog(dynob_mutex);
 
+        if (!level)
+            return;
+
         if (l1.spawns.count(progress) > 0)
         {
             for (const auto& si : l1.spawns[progress])
@@ -322,6 +325,8 @@ struct game_world // : public i_game
 
 
     level1 l1 {};
+
+    std::size_t level { 0 };
 
     std::mutex dynob_mutex {};
 

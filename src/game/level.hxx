@@ -41,7 +41,7 @@ struct level1
         spawn_list.push_back(
             {
                 0,
-                coordinate {50, 20},
+                coordinate {55, 20},
                 { coordinate{60, -5} }
             }
         );
