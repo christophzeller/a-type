@@ -9,6 +9,10 @@ using namespace std::chrono;
 using namespace std::literals::chrono_literals;
 using namespace engine::utilities;
 
+
+
+#include <iostream>
+
 struct projectile : public world_object, i_movable, i_drawable, i_collider
 {
     // move_speed
@@ -20,6 +24,7 @@ struct projectile : public world_object, i_movable, i_drawable, i_collider
         }
         else if (dir == NORTH || dir == SOUTH)
         {
+            model_chars = {'|', '|', '|'};
             model_dimensions = { 1, 3 };
         }
     }
@@ -91,6 +96,16 @@ struct projectile : public world_object, i_movable, i_drawable, i_collider
     
     void on_collision(i_collider* other) override 
     {
+        if (auto* tgt = dynamic_cast<i_shootable*>(other))
+        {
+            tgt->deal_damage(1);
+            has_hit = true;
+        }
+    }
+
+    bool is_alive() const override
+    {
+        return !has_hit;
     }
 
     std::vector<char> model_chars { 
@@ -99,4 +114,5 @@ struct projectile : public world_object, i_movable, i_drawable, i_collider
     coordinate model_dimensions { 3, 1 };
     system_clock::duration move_timer { 10ms };
     system_clock::duration speed { 10ms };
+    bool has_hit { false };
 };

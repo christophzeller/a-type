@@ -6,7 +6,8 @@
 
 struct torus : public enemy // world_object, i_movable, i_drawable
 {
-    torus(coordinate position) : enemy(position) 
+    torus(coordinate position, std::vector<coordinate> flight_plan) 
+        : enemy(position, 3s, 225ms, flight_plan) 
     {
 	     model_chars = { 
 	        '/', '=', '=', '\\',
@@ -17,11 +18,16 @@ struct torus : public enemy // world_object, i_movable, i_drawable
     	model_dimensions = { 4, 3 };
     	guns.clear();
     	guns.push_back({ WEST, {-4, 1}} );
-    	guns.push_back({ EAST, { 7, 1}} );
+    	guns.push_back({ EAST, { 4, 1}} );
     	guns.push_back({ NORTH, {1, -4}} );
-    	guns.push_back({ SOUTH, {1, 7}} );
+    	guns.push_back({ SOUTH, {1, 4}} );
     }
-    
+
+    torus(coordinate position)
+        : torus(position, waypoints)
+    {
+    }
+   
     render_info get_render_info() override 
     {
         bounding_box bb;

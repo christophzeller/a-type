@@ -6,6 +6,7 @@
 #include <set>
 #include <vector>
 
+
 namespace engine::utilities
 {
 
@@ -101,7 +102,9 @@ collision_list get_collisions(const std::vector<world_object*> objects, extents 
                 c.insert(rhs);
 
                 if (collisions.count(c) == 0)
+                {
                     collisions.insert(c);
+                }
             }
         }
     }

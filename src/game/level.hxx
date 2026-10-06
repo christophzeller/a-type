@@ -47,6 +47,28 @@ struct level1
         );
 
         spawns[30] = spawn_list;
+
+        std::vector<spawn_info> announce_list;
+        announce_list.push_back(
+            {
+                10,
+                coordinate {54, 20}
+            }
+        );
+        announce_list.push_back(
+            {
+                10,
+                coordinate {74, 5}
+            }
+        );
+        announce_list.push_back(
+            {
+                10,
+                coordinate {74, 10}
+            }
+        );
+
+        spawns[25] = announce_list;
     }
 
     spawn_map spawns;

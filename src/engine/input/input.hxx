@@ -17,8 +17,12 @@
 #include <termios.h>
 #include <unistd.h>
 
+/*struct input_observer
+{
+    notify()
+};*/
 
-struct input_listener
+struct input_listener // : public input_observable
 {
     explicit input_listener(int fd) : tty_fd(fd) { listener_thread = std::thread(&input_listener::input_loop, this, tty_fd); }
     ~input_listener() { is_running = false; listener_thread.join(); }

@@ -10,7 +10,7 @@ using namespace std::literals::chrono_literals;
 using namespace engine::utilities;
 
 
-struct player : public world_object, i_movable, i_drawable, i_collider, i_attacker
+struct player : public world_object, i_movable, i_drawable, i_collider, i_attacker, i_shootable
 {
     player(coordinate position) : world_object('>', position, [](){}) 
     {
@@ -91,6 +91,7 @@ struct player : public world_object, i_movable, i_drawable, i_collider, i_attack
     
     void on_collision(i_collider* other) override 
     {
+        // TODO: damage throttling
     }
 
     std::vector<char> model_chars { 
@@ -123,10 +124,27 @@ struct player : public world_object, i_movable, i_drawable, i_collider, i_attack
         return atks;
     }
 
+    void deal_damage(int dmg) override
+    {
+        hp -= dmg;
+    }
+
+    bool is_alive() const override
+    {
+        return hp > 0;
+    }
+
+    bool boom() const override
+    {
+        return true;
+    }
+
     std::atomic<bool> attack_intent { false };
 
     std::vector<gun> guns { };
     coordinate model_dimensions { 3, 3 };
     system_clock::duration move_timer { 50ms };
     system_clock::duration speed { 50ms };
+
+    int hp { 5 };
 };

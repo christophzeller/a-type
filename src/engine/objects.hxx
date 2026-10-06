@@ -64,7 +64,7 @@ struct extents
 struct world_object
 {
     world_object() = delete;
-    world_object(coordinate position) : position_(position) {}
+    explicit world_object(coordinate position) : position_(position) {}
     world_object(coordinate position, std::function<void(void)> logic) : position_(position), logic_(logic) {}
     world_object(char symbol, coordinate position, std::function<void(void)> logic) : symbol_(symbol), position_(position), logic_(logic) {} // TODO: deprecate
     virtual ~world_object() = default;
@@ -75,6 +75,7 @@ struct world_object
 
     virtual void update(system_clock::duration delta_t) { logic_(); };
     virtual extents get_extents() const = 0;
+    virtual bool is_alive() const { return true; }
 
     char symbol_ { '?' }; // TODO: deprecate
     coordinate position_;
@@ -131,6 +132,17 @@ struct i_attacker
 {
     virtual bool attack() = 0;
     virtual const attacks get_attacks() const = 0;
+};
+
+struct i_timer
+{
+    virtual bool is_expired() const = 0;
+};
+
+struct i_shootable
+{
+    virtual void deal_damage(int dmg) = 0;
+    virtual bool boom() const = 0;
 };
 
 } // engine::

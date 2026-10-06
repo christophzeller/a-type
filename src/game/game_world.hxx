@@ -12,6 +12,9 @@
 #include "game/projectile.hxx"
 #include "game/starfield.hxx"
 
+#include "game/fx/animation.hxx"
+#include "game/fx/announcer.hxx"
+
 #include "game/level.hxx"
 
 #include <algorithm>
@@ -25,13 +28,18 @@
 using namespace engine;
 using namespace engine::utilities;
 
-std::mutex world_mutex;
-
 struct game_world // : public i_game 
 {
+    /*std::vector<world_object> get_drawables()
+    {
+        std::vector<world_object> wo;
+
+        std::transform(drawables.begin(), drawables.end(), wo.begin(), [](i_drawable* p){ auto wp = dynamic_cast<world_object*>(p); return *wp;});
+        
+    }*/
+    
     void add_object(world_object* wo)
     {
-        std::lock_guard<std::mutex> world_guard(world_mutex);
         everything.push_back(wo);
     
         if (auto* drw = dynamic_cast<i_drawable*>(wo))
@@ -45,11 +53,13 @@ struct game_world // : public i_game
 
         if (auto* atk = dynamic_cast<i_attacker*>(wo))
             attackers.push_back(atk);
+
+        if (auto* tmr = dynamic_cast<i_timer*>(wo))
+            timers.push_back(tmr);
     }
 
     void remove_object(world_object* wo)
     {
-        std::lock_guard<std::mutex> world_guard(world_mutex);
         everything.erase(std::find(everything.begin(), everything.end(), wo));
 
         if (auto* plyr = dynamic_cast<player*>(wo))
@@ -69,22 +79,44 @@ struct game_world // : public i_game
         {
             attackers.erase(std::find(attackers.begin(), attackers.end(), atk));
         }
+
+        if (auto* tmr = dynamic_cast<i_timer*>(wo))
+        {
+            timers.erase(std::find(timers.begin(), timers.end(), tmr));
+        }
     }
 
     void process_collisions()
     {
-        std::lock_guard<std::mutex> world_guard(world_mutex);
-        
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
         auto collisions = get_collisions(everything, get_extents(world_bb));
         for (const auto& c : collisions)
         {
-            for (auto o : c)
+            auto lhs = *c.begin();
+            auto it = c.begin();
+            ++it;
+            auto rhs = *it;
+
+            if (auto* p = dynamic_cast<i_collider*>(lhs))
             {
-                o->position_ = { -100, -100 };
+                if (auto* q = dynamic_cast<i_collider*>(rhs))
+                {
+                    p->on_collision(q);
+                    q->on_collision(p);
+                }
             }
         }
     }
 
+    void spawn_explosion(coordinate position)
+    {
+        dynamic_spawns.push_back(
+            std::make_unique<animation>(
+                position
+            )
+        );
+        add_object(dynamic_spawns.back().get());
+    }
 
     void spawn_projectile(attack_info ai)
     {
@@ -100,7 +132,7 @@ struct game_world // : public i_game
 
     void process_attacks()
     {
-        std::lock_guard<std::mutex> dog(dynob_mutex);
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
 
         for (auto* atk : attackers)
         {
@@ -116,7 +148,6 @@ struct game_world // : public i_game
 
     void spawn_stars(std::size_t layers)
     {
-        std::lock_guard<std::mutex> dog(dynob_mutex);
         for (auto layer = 1; layer <= layers; ++layer)
         {
         	auto step = (layer - 1) ? layer * 4 : 1;
@@ -143,9 +174,27 @@ struct game_world // : public i_game
         }
     }
 
+    void boom()
+    {
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
+        for (auto it = dynamic_spawns.begin(); it != dynamic_spawns.end(); ++it)
+        {
+            if (  ! (*it)->is_alive())
+            {
+                if (auto* tgt = dynamic_cast<i_shootable*>( it->get() ) )
+                {
+                    if (tgt->boom())
+                    {
+                        spawn_explosion((*it)->position_);
+                    }
+                }
+            }
+        }
+    }
+
     void progress_level()
     {
-        std::lock_guard<std::mutex> dog(dynob_mutex);
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
 
         if (!level)
             return;
@@ -154,10 +203,7 @@ struct game_world // : public i_game
         {
             for (const auto& si : l1.spawns[progress])
             {
-                dynamic_spawns.push_back( 
-                    std::make_unique<rhombus>( si.location, si.waypoints )
-                );
-                add_object(dynamic_spawns.back().get());
+                spawn(si.type, si.location, si.waypoints);
             }
             l1.spawns.erase(progress);
         }
@@ -165,7 +211,8 @@ struct game_world // : public i_game
 
     void update_objects(system_clock::duration delta_t)
     {
-        std::lock_guard<std::mutex> dog(dynob_mutex);
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
+
         for (auto* o : everything) 
         {
             o->update(delta_t); 
@@ -174,7 +221,8 @@ struct game_world // : public i_game
 
     void move_objects()
     {
-        std::lock_guard<std::mutex> wog(world_mutex);
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
+        
         for (auto* o : movables) 
         {
             move_object(o, o->get_move_intent(), get_extents(world_bb), o->allow_oob()); 
@@ -183,15 +231,20 @@ struct game_world // : public i_game
 
     void cleanup()
     {
-        std::lock_guard<std::mutex> dog(dynob_mutex);
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
+
+        for (auto* tmr : timers)
+        {
+            if (tmr->is_expired())
+            {
+                auto wob = dynamic_cast<world_object*>(tmr);
+                wob->position_ = { -100, -100 };
+            }
+        }
+        
         for (auto it = dynamic_spawns.begin(); it != dynamic_spawns.end(); )
         {
-            if (it->get() == nullptr)
-            {
-                std::cin.get();
-            }
-        
-            if ( is_oob( it->get()->position_, get_extents(world_bb) ) )
+            if ( is_oob( it->get()->position_, get_extents(world_bb) ) || ! it->get()->is_alive())
             {
                 remove_object(it->get());
                 it = dynamic_spawns.erase(it);
@@ -208,6 +261,7 @@ struct game_world // : public i_game
         scroll_timer -= delta_t;
         if (scroll_timer < 0ms)
         {
+            //std::lock_guard<std::mutex> dog(dynob_mutex);
             scroll_timer = scroll_interval;
             spawn_stars(3);
 
@@ -218,6 +272,7 @@ struct game_world // : public i_game
     void on_tick(std::chrono::system_clock::duration delta_t, engine_state es)
     {
         static auto ctr { 0 };
+        std::lock_guard<std::mutex> dog(dynob_mutex);
 
         check_scroll(delta_t);
         progress_level();
@@ -226,18 +281,25 @@ struct game_world // : public i_game
         move_objects();
 
         process_collisions(); 
+        boom();
+        
         process_attacks(); 
 
         cleanup();
     }
 
-
     void spawn(std::size_t what, coordinate where, std::vector<coordinate> flight_plan)
     {
-        std::lock_guard<std::mutex> dog(dynob_mutex);
-
+//        std::lock_guard<std::mutex> dog(dynob_mutex);
         switch (what)
         {
+            case 10:
+                dynamic_spawns.push_back(
+                    std::make_unique<announcer>(
+                        where
+                    )
+                );
+            break;
             case 0:
                 dynamic_spawns.push_back(
                     std::make_unique<rhombus>(
@@ -246,7 +308,7 @@ struct game_world // : public i_game
                     )
                 );
             break;
-/*            case 1:
+            case 1:
                 dynamic_spawns.push_back(
                     std::make_unique<torus>(
                         where,
@@ -260,7 +322,7 @@ struct game_world // : public i_game
                         where,
                         flight_plan
                     )
-                );*/
+                );
             break;
             default:
                 return;
@@ -292,7 +354,7 @@ struct game_world // : public i_game
                     std::make_unique<torus>(
                         coordinate { 40 + x, 2 + y }
                     )
-                );     
+                );
             break;
             case 2:
                 dynamic_spawns.push_back(
@@ -335,6 +397,7 @@ struct game_world // : public i_game
     std::vector<i_drawable*> drawables {};
     std::vector<i_movable*> movables {};
     std::vector<i_attacker*> attackers {};
+    std::vector<i_timer*> timers {};
     player* the_player { nullptr };
 
     system_clock::duration scroll_interval = 100ms;

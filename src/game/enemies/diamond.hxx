@@ -5,11 +5,15 @@
 
 struct diamond : public enemy//, world_object, i_movable, i_drawable
 {
-    diamond(coordinate position) : enemy(position) 
+    explicit diamond(coordinate position) 
+        : diamond(position, waypoints) 
     {
-    	move_timer = 175ms;
-    	move_speed = 175ms;
 
+    }
+
+    diamond(coordinate position, std::vector<coordinate> flight_plan)
+        : enemy(position, 2s, 175ms, flight_plan) 
+    {
 		model_chars = { 
 	        '-', '/', '\\', 'X',
 	        '/', ' ', '=', '\\',
@@ -19,8 +23,8 @@ struct diamond : public enemy//, world_object, i_movable, i_drawable
         model_dimensions = { 4, 4 };
 
         guns.clear();
-        guns.push_back( {EAST, {-4, 0}} );
-        guns.push_back( {EAST, {-4, 3}} );
+        guns.push_back( {WEST, {-4, 0}} );
+        guns.push_back( {WEST, {-4, 3}} );
     }
 
     render_info get_render_info() override 

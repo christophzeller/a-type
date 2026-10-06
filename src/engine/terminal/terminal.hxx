@@ -204,7 +204,7 @@ void render_autoscroll::draw_world(game_world& gw, resolution screen_dimensions)
 {
     auto buf = get_renderbuffers(screen_dimensions.width, screen_dimensions.height);
 
-    std::lock_guard<std::mutex> world_guard(world_mutex);
+    std::lock_guard<std::mutex> lg(gw.dynob_mutex);
     
     for (auto* obj : gw.drawables)
     {   

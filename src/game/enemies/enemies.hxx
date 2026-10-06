@@ -26,17 +26,34 @@ using namespace engine::utilities;
 // hold position relative to two objects (block)
 // 
 
-struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacker
+struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacker, i_shootable
 {
-    enemy(coordinate position) : world_object('?', position, [](){} ) 
+    enemy(coordinate position, 
+        system_clock::duration attack_interval = 1250ms, 
+        system_clock::duration move_interval = 250ms, 
+        std::vector<coordinate> flight_plan = {}
+//        std::vector<char> model = { '?' }
+        )
+    : world_object(position)
+    , attack_timer(attack_interval)
+    , attack_frequency(attack_interval)
+    , move_timer(move_interval)
+    , move_speed(move_interval)
+    , waypoints(flight_plan)
     {
     }
 
-    // TODO: enemy(coordinate position, move timer, move speed, attack timer, attack speed, model_chars, model_dimensions
+
+    enemy(coordinate position, 
+        system_clock::duration move_interval, 
+        system_clock::duration attack_interval)
+    : enemy(position, move_interval, attack_interval, waypoints)
+    {
+    }
+
     
     void update(system_clock::duration delta_t) override 
     {
-        logic_();
         if (move_intent != STATIC)
         {
             move_timer -= delta_t;
@@ -129,6 +146,21 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacke
         return atks;
     }
 
+    void deal_damage(int dmg) override
+    {
+        hp -= 1;
+    }
+
+    bool is_alive() const override
+    {
+        return hp > 0;
+    }
+
+    bool boom() const override
+    {
+        return true;
+    }
+
     system_clock::duration attack_timer { 1s };
     system_clock::duration attack_frequency { 3s };
 
@@ -139,9 +171,11 @@ struct enemy : public world_object, i_movable, i_drawable, i_collider, i_attacke
     bool attack_intent { false };
     std::vector<gun> guns { { WEST, {-4, 0}} };
         
-    std::vector<coordinate> waypoints;
-    std::size_t current_waypoint;
+    std::vector<coordinate> waypoints {};
+    std::size_t current_waypoint { 0 };
 
     std::vector<char> model_chars { '?' };
     coordinate model_dimensions { 1, 1 };
+
+    int hp { 1 };
 };
